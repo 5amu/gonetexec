@@ -1,7 +1,7 @@
 package optldap
 
 import (
-	"github.com/5amu/goad/internal/goad/optkrb5"
+	"github.com/5amu/goad/cmd/goad/cli/optkrb5"
 	"github.com/5amu/goad/internal/printer"
 	"github.com/5amu/goad/internal/utils"
 )

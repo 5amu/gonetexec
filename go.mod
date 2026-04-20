@@ -1,6 +1,8 @@
 module github.com/5amu/goad
 
-go 1.21
+go 1.24.13
+
+replace github.com/mandiant/gopacket => ../../gopacket
 
 require (
 	github.com/0xrawsec/golang-etw v1.6.2
@@ -8,7 +10,7 @@ require (
 	github.com/fatih/color v1.16.0
 	github.com/geoffgarside/ber v1.1.0
 	github.com/ghostiam/binstruct v1.3.2
-	github.com/go-ldap/ldap/v3 v3.4.6
+	github.com/go-ldap/ldap/v3 v3.4.12
 	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/jlaffaye/ftp v0.2.0
 	github.com/lkarlslund/binstruct v1.3.1-0.20230504093039-8f69d6d48410
@@ -20,11 +22,13 @@ require (
 require (
 	github.com/0xrawsec/golang-utils v1.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/google/uuid v1.3.1 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
+	github.com/mandiant/gopacket v0.0.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	golang.org/x/term v0.39.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
@@ -34,7 +38,7 @@ require (
 	github.com/ChrisTrenkamp/goxpath v0.0.0-20210404020558-97928f7e12b6 // indirect
 	github.com/bodgit/ntlmssp v0.0.0-20231122144230-2b2bca29f22b // indirect
 	github.com/bodgit/windows v1.0.1 // indirect
-	github.com/go-asn1-ber/asn1-ber v1.5.5 // indirect
+	github.com/go-asn1-ber/asn1-ber v1.5.8-0.20250403174932-29230038a667 // indirect
 	github.com/go-logr/logr v1.3.0 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2
@@ -48,8 +52,8 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/tidwall/transform v0.0.0-20201103190739-32f242e2dbde
-	golang.org/x/crypto v0.21.0
-	golang.org/x/net v0.21.0
-	golang.org/x/sys v0.18.0 // indirect
-	golang.org/x/text v0.14.0
+	golang.org/x/crypto v0.36.0
+	golang.org/x/net v0.38.0
+	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/text v0.23.0
 )

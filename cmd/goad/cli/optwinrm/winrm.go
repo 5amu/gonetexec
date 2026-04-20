@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/5amu/goad/internal/goad/optsmb"
+	"github.com/5amu/goad/cmd/goad/cli/optsmb"
 	"github.com/5amu/goad/internal/printer"
 	"github.com/5amu/goad/internal/utils"
 	putils "github.com/5amu/goad/pkg/proxyconn"

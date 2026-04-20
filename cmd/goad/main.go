@@ -5,16 +5,16 @@ import (
 	"os"
 
 	"github.com/5amu/go-flags"
-	"github.com/5amu/goad/internal/goad/optftp"
-	"github.com/5amu/goad/internal/goad/optkrb5"
-	"github.com/5amu/goad/internal/goad/optldap"
-	"github.com/5amu/goad/internal/goad/optsmb"
-	"github.com/5amu/goad/internal/goad/optssh"
-	"github.com/5amu/goad/internal/goad/optvnc"
+	"github.com/5amu/goad/cmd/goad/cli"
+	"github.com/5amu/goad/cmd/goad/cli/optkrb5"
+	"github.com/5amu/goad/cmd/goad/cli/optldap"
+	"github.com/5amu/goad/cmd/goad/cli/optsmb"
+	"github.com/5amu/goad/cmd/goad/cli/optssh"
+	"github.com/5amu/goad/cmd/goad/cli/optvnc"
 )
 
 type MainOptions struct {
-	FTP  optftp.Options  `command:"ftp" description:"Own stuff using FTP"`
+	FTP  cli.FTPOptions  `command:"ftp" description:"Own stuff using FTP"`
 	LDAP optldap.Options `command:"ldap" description:"Own stuff using LDAP"`
 	KRB5 optkrb5.Options `command:"krb5" description:"Own stuff using KERBEROS"`
 	//MSSQL optmssql.Options `command:"mssql" description:"Own stuff using MSSQL"`
