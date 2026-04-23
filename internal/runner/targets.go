@@ -52,7 +52,7 @@ func extract(list []string, recurse bool) []session.Target {
 				ips = append(ips, ip.String())
 			}
 			for _, ip := range ips[1 : len(ips)-1] {
-				res = append(res, session.Target{Host: ip})
+				res = append(res, session.Target{Host: ip, IP: ip})
 			}
 		} else if isFile(l) && recurse {
 			o, _ := readLines(l)

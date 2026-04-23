@@ -59,134 +59,26 @@ func (o *FTPOptions) Run() {
 
 	} else if o.Mode.List {
 		// List mode will list files in the root directory of the FTP server.
-		f = func(sc *ftp.ServerConn, t session.Target, s1, s2 string) error {
-			l := logger.New("FTP", t.Host, t.Host, t.Port)
-
-			e, err := sc.List("/")
-			if err != nil {
-				l.Error(fmt.Sprintln(err))
-				return err
-			}
-
-			for _, entry := range e {
-				l.Info(entry.Name)
-			}
-			return nil
-		}
+		f = ftpList
 	} else if o.Mode.RecursiveList {
 		// Recursive list mode will list all files in the FTP server, starting from the root directory.
-		f = func(sc *ftp.ServerConn, t session.Target, s1, s2 string) error {
-			l := logger.New("FTP", t.Host, t.Host, t.Port)
-
-			for fs := sc.Walk("/"); fs.Next(); {
-				l.Info(fs.Path())
-			}
-			return nil
-		}
+		f = ftpRecursiveList
 	} else if o.Mode.PutFile != "" {
 		// Put mode will upload a local file to the FTP server. If the destination file is not specified,
 		// it will be saved with the same name as the source file in the current working directory.
 		srcFile = o.Mode.PutFile
 		dstFile = o.Mode.DstFile
-		f = func(sc *ftp.ServerConn, t session.Target, src, dst string) error {
-			l := logger.New("FTP", t.Host, t.Host, t.Port)
-
-			if dst == "" {
-				dst = src
-			}
-
-			data, err := os.ReadFile(src)
-			if err != nil {
-				l.Error(fmt.Sprintln(err))
-				return err
-			}
-
-			reader := bytes.NewBuffer(data)
-
-			err = sc.Stor(dst, reader)
-			if err != nil {
-				l.Error(fmt.Sprintln(err))
-				return err
-			}
-
-			l.Info(fmt.Sprintf("Successfully uploaded %s to %s", src, dst))
-			return nil
-		}
+		f = ftpPutFile
 	} else if o.Mode.ReadFile != "" {
 		// Read mode will read the content of a file stored in the FTP server and print it to the console.
 		srcFile = o.Mode.ReadFile
-		f = func(sc *ftp.ServerConn, t session.Target, s1, s2 string) error {
-			l := logger.New("FTP", t.Host, t.Host, t.Port)
-
-			r, err := sc.Retr(s1)
-			if err != nil {
-				l.Error(fmt.Sprintln(err))
-				return err
-			}
-			defer r.Close()
-
-			buf, err := io.ReadAll(r)
-			if err != nil {
-				l.Error(fmt.Sprintln(err))
-				return err
-			}
-
-			l.Info(fmt.Sprintf("Content of %s\n", s1))
-			l.Info(string(buf))
-			return nil
-		}
+		f = ftpReadFile
 	} else if o.Mode.GetFile != "" {
 		// Get mode will download a file from the FTP server and save it locally. If the destination file is not specified,
 		// it will be saved with the same name as the source file in the current working directory.
 		srcFile = o.Mode.GetFile
 		dstFile = o.Mode.DstFile
-		f = func(sc *ftp.ServerConn, t session.Target, src, dst string) error {
-			l := logger.New("FTP", t.Host, t.Host, t.Port)
-
-			var outfile *os.File
-			if dst == "" {
-				basePath := path.Base(src)
-
-				dstF, err := os.Create(basePath)
-				if err != nil {
-					l.Error(fmt.Sprintln(err))
-					return err
-				}
-				outfile = dstF
-				dst = dstF.Name()
-			} else {
-				dstF, err := os.Open(dst)
-				if err != nil {
-					l.Error(fmt.Sprintln(err))
-					return err
-				}
-				outfile = dstF
-				dst = dstF.Name()
-			}
-			defer outfile.Close()
-
-			r, err := sc.Retr(src)
-			if err != nil {
-				l.Error(fmt.Sprintln(err))
-				return err
-			}
-			defer r.Close()
-
-			buf, err := io.ReadAll(r)
-			if err != nil {
-				l.Error(fmt.Sprintln(err))
-				return err
-			}
-
-			_, err = outfile.Write(buf)
-			if err != nil {
-				l.Error(fmt.Sprintln(err))
-				return err
-			}
-
-			l.Info(fmt.Sprintf("Output of file %s written to %s", src, dst))
-			return nil
-		}
+		f = ftpGetFile
 	} else {
 		return
 	}
@@ -308,4 +200,122 @@ func (r *FTPRunner) Stop() {
 	if r.cancelCtx != nil {
 		r.cancelCtx()
 	}
+}
+
+func ftpList(c *ftp.ServerConn, t session.Target, src, dst string) error {
+	l := logger.New("FTP", t.Host, t.Host, t.Port)
+
+	e, err := c.List("/")
+	if err != nil {
+		l.Error(fmt.Sprintln(err))
+		return err
+	}
+
+	for _, entry := range e {
+		l.Info(entry.Name)
+	}
+	return nil
+}
+
+func ftpRecursiveList(c *ftp.ServerConn, t session.Target, src, dst string) error {
+	l := logger.New("FTP", t.Host, t.Host, t.Port)
+
+	for fs := c.Walk("/"); fs.Next(); {
+		l.Info(fs.Path())
+	}
+	return nil
+}
+
+func ftpPutFile(c *ftp.ServerConn, t session.Target, src, dst string) error {
+	l := logger.New("FTP", t.Host, t.Host, t.Port)
+
+	if dst == "" {
+		dst = src
+	}
+
+	data, err := os.ReadFile(src)
+	if err != nil {
+		l.Error(fmt.Sprintln(err))
+		return err
+	}
+
+	reader := bytes.NewBuffer(data)
+
+	err = c.Stor(dst, reader)
+	if err != nil {
+		l.Error(fmt.Sprintln(err))
+		return err
+	}
+
+	l.Info(fmt.Sprintf("Successfully uploaded %s to %s", src, dst))
+	return nil
+}
+
+func ftpReadFile(c *ftp.ServerConn, t session.Target, src, dst string) error {
+	l := logger.New("FTP", t.Host, t.Host, t.Port)
+
+	r, err := c.Retr(src)
+	if err != nil {
+		l.Error(fmt.Sprintln(err))
+		return err
+	}
+	defer r.Close()
+
+	buf, err := io.ReadAll(r)
+	if err != nil {
+		l.Error(fmt.Sprintln(err))
+		return err
+	}
+
+	l.Info(fmt.Sprintf("Content of %s\n", src))
+	l.Info(string(buf))
+	return nil
+}
+
+func ftpGetFile(c *ftp.ServerConn, t session.Target, src, dst string) error {
+	l := logger.New("FTP", t.Host, t.Host, t.Port)
+
+	var outfile *os.File
+	if dst == "" {
+		basePath := path.Base(src)
+
+		dstF, err := os.Create(basePath)
+		if err != nil {
+			l.Error(fmt.Sprintln(err))
+			return err
+		}
+		outfile = dstF
+		dst = dstF.Name()
+	} else {
+		dstF, err := os.Open(dst)
+		if err != nil {
+			l.Error(fmt.Sprintln(err))
+			return err
+		}
+		outfile = dstF
+		dst = dstF.Name()
+	}
+	defer outfile.Close()
+
+	r, err := c.Retr(src)
+	if err != nil {
+		l.Error(fmt.Sprintln(err))
+		return err
+	}
+	defer r.Close()
+
+	buf, err := io.ReadAll(r)
+	if err != nil {
+		l.Error(fmt.Sprintln(err))
+		return err
+	}
+
+	_, err = outfile.Write(buf)
+	if err != nil {
+		l.Error(fmt.Sprintln(err))
+		return err
+	}
+
+	l.Info(fmt.Sprintf("Output of file %s written to %s", src, dst))
+	return nil
 }
