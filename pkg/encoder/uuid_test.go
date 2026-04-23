@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/5amu/goad/pkg/encoder"
+	"github.com/5amu/gonetexec/pkg/encoder"
 )
 
 func TestUUIDFromString(t *testing.T) {

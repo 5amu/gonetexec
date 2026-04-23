@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/5amu/goad/internal/printer"
-	"github.com/5amu/goad/internal/utils"
-	"github.com/5amu/goad/pkg/proxyconn"
+	"github.com/5amu/gonetexec/internal/printer"
+	"github.com/5amu/gonetexec/internal/utils"
+	"github.com/5amu/gonetexec/pkg/proxyconn"
 	"github.com/mitchellh/go-vnc"
 )
 

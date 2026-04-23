@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/5amu/goad/pkg/smb/internal/smb2"
+	"github.com/5amu/gonetexec/pkg/smb/internal/smb2"
 )
 
 type treeConn struct {

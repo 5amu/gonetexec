@@ -1,4 +1,4 @@
-module github.com/5amu/goad
+module github.com/5amu/gonetexec
 
 go 1.24.13
 
@@ -24,7 +24,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/mandiant/gopacket v0.0.0-20260422152958-4890b97162e5 // indirect
+	github.com/mandiant/gopacket v0.0.0-20260422152958-4890b97162e5
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/term v0.39.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect

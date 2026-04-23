@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/5amu/goad/pkg/proxyconn"
+	"github.com/5amu/gonetexec/pkg/proxyconn"
 	"golang.org/x/crypto/ssh"
 )
 

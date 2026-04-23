@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/5amu/goad/pkg/mstypes"
+	"github.com/5amu/gonetexec/pkg/mstypes"
 	"github.com/lkarlslund/binstruct"
 )
 

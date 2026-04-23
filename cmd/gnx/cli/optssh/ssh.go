@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/5amu/goad/internal/printer"
-	"github.com/5amu/goad/internal/utils"
+	"github.com/5amu/gonetexec/internal/printer"
+	"github.com/5amu/gonetexec/internal/utils"
 	"golang.org/x/crypto/ssh"
 )
 

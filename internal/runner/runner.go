@@ -10,12 +10,30 @@ type Runner interface {
 	Stop()
 }
 
-func ParallelRun(ctx context.Context, runners []Runner, stopOnError bool, threads int) error {
+type RunnerOptions struct {
+	StopOnError   bool
+	StopOnSuccess bool
+	Threads       int
+}
+
+const DefaultThreads = 20
+
+func ParallelRun(ctx context.Context, runners []Runner, opts *RunnerOptions) error {
 	childCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	if opts == nil {
+		opts = &RunnerOptions{
+			StopOnError:   false,
+			StopOnSuccess: false,
+			Threads:       10,
+		}
+	} else if opts.Threads <= 0 {
+		opts.Threads = DefaultThreads
+	}
+
 	errC := make(chan error)
-	guard := make(chan struct{}, threads)
+	guard := make(chan struct{}, opts.Threads)
 	var wg sync.WaitGroup
 
 	for _, r := range runners {
@@ -23,8 +41,12 @@ func ParallelRun(ctx context.Context, runners []Runner, stopOnError bool, thread
 		wg.Add(1)
 		go func(r Runner) {
 			if err := r.Start(childCtx); err != nil {
-				if stopOnError {
+				if opts.StopOnError {
 					errC <- err
+				}
+			} else {
+				if opts.StopOnSuccess {
+					errC <- nil
 				}
 			}
 			<-guard

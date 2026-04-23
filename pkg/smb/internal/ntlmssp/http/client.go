@@ -13,7 +13,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/5amu/goad/pkg/smb/internal/ntlmssp"
+	"github.com/5amu/gonetexec/pkg/smb/internal/ntlmssp"
 	"github.com/hashicorp/go-cleanhttp"
 )
 

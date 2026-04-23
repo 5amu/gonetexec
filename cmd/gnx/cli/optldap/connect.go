@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/5amu/goad/pkg/proxyconn"
+	"github.com/5amu/gonetexec/pkg/proxyconn"
 	"github.com/go-ldap/ldap/v3"
 )
 

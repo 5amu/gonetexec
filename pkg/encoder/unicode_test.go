@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/5amu/goad/pkg/encoder"
+	"github.com/5amu/gonetexec/pkg/encoder"
 )
 
 func TestStringToUnicode(t *testing.T) {

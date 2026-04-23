@@ -3,9 +3,9 @@ package smb
 import (
 	"encoding/asn1"
 
-	"github.com/5amu/goad/pkg/smb/internal/ntlm"
-	"github.com/5amu/goad/pkg/smb/internal/ntlmssp"
-	"github.com/5amu/goad/pkg/smb/internal/spnego"
+	"github.com/5amu/gonetexec/pkg/smb/internal/ntlm"
+	"github.com/5amu/gonetexec/pkg/smb/internal/ntlmssp"
+	"github.com/5amu/gonetexec/pkg/smb/internal/spnego"
 )
 
 type Initiator interface {

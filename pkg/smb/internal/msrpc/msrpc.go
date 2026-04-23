@@ -3,7 +3,7 @@ package msrpc
 import (
 	"encoding/binary"
 
-	"github.com/5amu/goad/pkg/encoder"
+	"github.com/5amu/gonetexec/pkg/encoder"
 )
 
 var le = binary.LittleEndian

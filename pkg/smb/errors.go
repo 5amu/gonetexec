@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/5amu/goad/pkg/smb/internal/erref"
+	"github.com/5amu/gonetexec/pkg/smb/internal/erref"
 )
 
 // TransportError represents a error come from net.Conn layer.

@@ -8,10 +8,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/5amu/goad/cmd/goad/cli/optsmb"
-	"github.com/5amu/goad/internal/printer"
-	"github.com/5amu/goad/internal/utils"
-	"github.com/5amu/goad/pkg/smb"
+	"github.com/5amu/gonetexec/cmd/gnx/cli/optsmb"
+	"github.com/5amu/gonetexec/internal/printer"
+	"github.com/5amu/gonetexec/internal/utils"
+	"github.com/5amu/gonetexec/pkg/smb"
 	"github.com/go-ldap/ldap/v3"
 )
 

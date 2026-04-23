@@ -3,7 +3,7 @@ package msrpc
 import (
 	"slices"
 
-	"github.com/5amu/goad/pkg/smb/internal/utf16le"
+	"github.com/5amu/gonetexec/pkg/smb/internal/utf16le"
 )
 
 var SRVSVC_UUID = []byte("c84f324b7016d30112785a47bf6ee188")

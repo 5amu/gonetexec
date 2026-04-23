@@ -13,12 +13,12 @@ import (
 	"fmt"
 	"hash"
 
-	"github.com/5amu/goad/pkg/smb/internal/crypto/ccm"
-	"github.com/5amu/goad/pkg/smb/internal/crypto/cmac"
-	"github.com/5amu/goad/pkg/smb/internal/smb2"
-	spnegol "github.com/5amu/goad/pkg/smb/internal/spnego"
+	"github.com/5amu/gonetexec/pkg/smb/internal/crypto/ccm"
+	"github.com/5amu/gonetexec/pkg/smb/internal/crypto/cmac"
+	"github.com/5amu/gonetexec/pkg/smb/internal/smb2"
+	spnegol "github.com/5amu/gonetexec/pkg/smb/internal/spnego"
 
-	"github.com/5amu/goad/pkg/smb/internal/erref"
+	"github.com/5amu/gonetexec/pkg/smb/internal/erref"
 )
 
 func sessionSetup(conn *conn, i Initiator, ctx context.Context) (*session, error) {

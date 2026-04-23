@@ -39,7 +39,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/5amu/goad/pkg/smb/internal/erref"
+	"github.com/5amu/gonetexec/pkg/smb/internal/erref"
 )
 
 // ErrBadPattern indicates a pattern was malformed.

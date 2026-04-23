@@ -10,7 +10,7 @@ import (
 	"strings"
 	"unicode/utf16"
 
-	"github.com/5amu/goad/pkg/encoder"
+	"github.com/5amu/gonetexec/pkg/encoder"
 	"golang.org/x/crypto/md4" //nolint:staticcheck
 )
 

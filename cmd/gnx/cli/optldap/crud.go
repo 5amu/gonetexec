@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/5amu/goad/internal/printer"
-	"github.com/5amu/goad/internal/utils"
-	"github.com/5amu/goad/pkg/mstypes"
+	"github.com/5amu/gonetexec/internal/printer"
+	"github.com/5amu/gonetexec/internal/utils"
+	"github.com/5amu/gonetexec/pkg/mstypes"
 	"github.com/go-ldap/ldap/v3"
 )
 

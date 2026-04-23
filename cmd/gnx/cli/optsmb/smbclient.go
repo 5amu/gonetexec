@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/5amu/goad/internal/printer"
-	"github.com/5amu/goad/pkg/smb"
+	"github.com/5amu/gonetexec/internal/printer"
+	"github.com/5amu/gonetexec/pkg/smb"
 )
 
 const HelpMsg = `

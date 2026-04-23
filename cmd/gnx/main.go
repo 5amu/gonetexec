@@ -5,18 +5,17 @@ import (
 	"os"
 
 	"github.com/5amu/go-flags"
-	"github.com/5amu/goad/cmd/goad/cli"
-	"github.com/5amu/goad/cmd/goad/cli/optkrb5"
-	"github.com/5amu/goad/cmd/goad/cli/optldap"
-	"github.com/5amu/goad/cmd/goad/cli/optsmb"
-	"github.com/5amu/goad/cmd/goad/cli/optssh"
-	"github.com/5amu/goad/cmd/goad/cli/optvnc"
+	"github.com/5amu/gonetexec/cmd/gnx/cli"
+	"github.com/5amu/gonetexec/cmd/gnx/cli/optldap"
+	"github.com/5amu/gonetexec/cmd/gnx/cli/optsmb"
+	"github.com/5amu/gonetexec/cmd/gnx/cli/optssh"
+	"github.com/5amu/gonetexec/cmd/gnx/cli/optvnc"
 )
 
 type MainOptions struct {
 	FTP  cli.FTPOptions  `command:"ftp" description:"Own stuff using FTP"`
 	LDAP optldap.Options `command:"ldap" description:"Own stuff using LDAP"`
-	KRB5 optkrb5.Options `command:"krb5" description:"Own stuff using KERBEROS"`
+	KRB5 cli.Krb5Options `command:"krb5" description:"Own stuff using KERBEROS"`
 	//MSSQL optmssql.Options `command:"mssql" description:"Own stuff using MSSQL"`
 	//RDP   optrdp.Options   `command:"rdp" description:"Own stuff using RDP"`
 	SMB optsmb.Options `command:"smb" description:"Own stuff using SMB"`

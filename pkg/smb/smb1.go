@@ -8,7 +8,7 @@ import (
 	"io"
 	"net"
 
-	"github.com/5amu/goad/pkg/encoder"
+	"github.com/5amu/gonetexec/pkg/encoder"
 )
 
 // SMBv1 is supported as far as DETECTION goes. In 2024 I'm not willing to

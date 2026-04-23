@@ -11,8 +11,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/5amu/goad/internal/logger"
-	"github.com/5amu/goad/internal/runner"
+	"github.com/5amu/gonetexec/internal/logger"
+	"github.com/5amu/gonetexec/internal/runner"
 	"github.com/jlaffaye/ftp"
 	"github.com/mandiant/gopacket/pkg/session"
 	"github.com/mandiant/gopacket/pkg/transport"
@@ -206,7 +206,7 @@ func (o *FTPOptions) Run() {
 		}
 	}
 
-	if err := runner.ParallelRun(context.Background(), runners, false, DefaultThreads); err != nil {
+	if err := runner.ParallelRun(context.Background(), runners, nil); err != nil {
 		fmt.Println("Error running FTP operations:", err)
 	}
 }

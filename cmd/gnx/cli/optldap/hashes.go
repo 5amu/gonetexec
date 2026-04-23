@@ -1,9 +1,9 @@
 package optldap
 
 import (
-	"github.com/5amu/goad/cmd/goad/cli/optkrb5"
-	"github.com/5amu/goad/internal/printer"
-	"github.com/5amu/goad/internal/utils"
+	"github.com/5amu/gonetexec/cmd/gnx/cli/optkrb5"
+	"github.com/5amu/gonetexec/internal/printer"
+	"github.com/5amu/gonetexec/internal/utils"
 )
 
 func (o *Options) asreproast(target string) {

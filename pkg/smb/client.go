@@ -14,14 +14,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/5amu/goad/pkg/dcerpc"
-	"github.com/5amu/goad/pkg/encoder"
-	"github.com/5amu/goad/pkg/smb/internal/erref"
-	"github.com/5amu/goad/pkg/smb/internal/smb2"
-	"github.com/5amu/goad/pkg/smb/internal/utf16le"
-	"github.com/5amu/goad/pkg/utils"
+	"github.com/5amu/gonetexec/pkg/dcerpc"
+	"github.com/5amu/gonetexec/pkg/encoder"
+	"github.com/5amu/gonetexec/pkg/smb/internal/erref"
+	"github.com/5amu/gonetexec/pkg/smb/internal/smb2"
+	"github.com/5amu/gonetexec/pkg/smb/internal/utf16le"
+	"github.com/5amu/gonetexec/pkg/utils"
 
-	"github.com/5amu/goad/pkg/smb/internal/msrpc"
+	"github.com/5amu/gonetexec/pkg/smb/internal/msrpc"
 )
 
 // Dialer contains options for func (*Dialer) Dial.
