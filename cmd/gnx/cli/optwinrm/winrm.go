@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/5amu/gonetexec/cmd/gnx/cli/optsmb"
 	"github.com/5amu/gonetexec/internal/printer"
 	"github.com/5amu/gonetexec/internal/utils"
 	putils "github.com/5amu/gonetexec/pkg/proxyconn"
@@ -52,7 +51,6 @@ func (o *Options) getFunction() func(string) {
 
 func (o *Options) Run() {
 	o.targets = utils.ExtractTargets(o.Targets.TARGETS)
-	o.target2SMBInfo = optsmb.GatherSMBInfoToMap(o.targets, 445)
 	var f func(string) = o.getFunction()
 	if f == nil {
 		return

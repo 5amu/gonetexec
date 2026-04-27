@@ -6,7 +6,6 @@ import (
 
 	"github.com/5amu/gonetexec/cmd/gnx/cli"
 	"github.com/5amu/gonetexec/cmd/gnx/cli/optldap"
-	"github.com/5amu/gonetexec/cmd/gnx/cli/optsmb"
 	"github.com/5amu/gonetexec/cmd/gnx/cli/optssh"
 	"github.com/5amu/gonetexec/cmd/gnx/cli/optvnc"
 	"github.com/spf13/cobra"
@@ -21,7 +20,7 @@ func main() {
 	rootCmd.AddCommand(cli.NewFTPCmd())
 	rootCmd.AddCommand(cli.NewKrb5Cmd())
 	rootCmd.AddCommand(optldap.NewLDAPCmd())
-	rootCmd.AddCommand(optsmb.NewSMBCmd())
+	rootCmd.AddCommand(cli.NewSMBCmd())
 	rootCmd.AddCommand(optssh.NewSSHCmd())
 	rootCmd.AddCommand(optvnc.NewVNCCmd())
 

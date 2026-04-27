@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/5amu/gonetexec/cmd/gnx/cli/optsmb"
 	"github.com/5amu/gonetexec/internal/printer"
 	"github.com/5amu/gonetexec/internal/utils"
 	"github.com/5amu/gonetexec/pkg/smb"
@@ -182,7 +181,6 @@ func NewLDAPCmd() *cobra.Command {
 	return cmd
 }
 
-
 type ExecutionFunction int
 
 const (
@@ -213,11 +211,6 @@ func (o *Options) parallelExecution(runner func(string)) {
 }
 
 func (o *Options) Run() {
-	o.target2SMBInfo = optsmb.GatherSMBInfoToMap(
-		utils.ExtractTargets(o.Targets.TARGETS),
-		optsmb.DefaultPort,
-	)
-
 	if !o.Connection.NullSession {
 		o.credentials = utils.NewCredentialsDispacher(
 			o.Connection.Username,

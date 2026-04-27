@@ -249,7 +249,7 @@ func ftpPutFile(c *ftp.ServerConn, t session.Target, src, dst string) error {
 		return err
 	}
 
-	l.Info(fmt.Sprintf("Successfully uploaded %s to %s", src, dst))
+	l.Log(context.Background(), logger.LevelSuccess.Level(), fmt.Sprintf("Successfully uploaded %s to %s", src, dst))
 	return nil
 }
 
