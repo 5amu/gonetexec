@@ -13,6 +13,7 @@ import (
 	"github.com/5amu/gonetexec/internal/utils"
 	"github.com/5amu/gonetexec/pkg/smb"
 	"github.com/go-ldap/ldap/v3"
+	"github.com/spf13/cobra"
 )
 
 type Options struct {
@@ -119,6 +120,68 @@ type Options struct {
 	deletionType DeletionType
 	deletionName string
 }
+
+func NewLDAPCmd() *cobra.Command {
+	opts := &Options{}
+
+	cmd := &cobra.Command{
+		Use:   "ldap [TARGETS...]",
+		Short: "Own stuff using LDAP",
+		Args:  cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			opts.Targets.TARGETS = args
+			opts.Run()
+		},
+	}
+
+	cmd.Flags().StringVarP(&opts.Connection.Username, "username", "u", "", "Provide username (or FILE)")
+	cmd.Flags().StringVarP(&opts.Connection.Password, "password", "p", "", "Provide password (or FILE)")
+	cmd.Flags().BoolVar(&opts.Connection.NullSession, "null-session", false, "Authenticate with null credentials")
+	cmd.Flags().StringVarP(&opts.Connection.NTLM, "hashes", "H", "", "Authenticate with NTLM hash")
+	cmd.Flags().StringVarP(&opts.Connection.Domain, "domain", "d", "", "Provide domain")
+	cmd.Flags().IntVar(&opts.Connection.Port, "port", 389, "Ldap port to contact")
+	cmd.Flags().BoolVarP(&opts.Connection.SSL, "ssl", "s", false, "Use ssl to interact with ldap")
+	cmd.Flags().StringVar(&opts.Hashes.AsrepRoast, "asreproast", "", "Grab AS_REP ticket(s) parsed to be cracked with hashcat")
+	cmd.Flags().StringVar(&opts.Hashes.Kerberoast, "kerberoast", "", "Grab TGS ticket(s) parsed to be cracked with hashcat")
+	cmd.Flags().StringVar(&opts.Create.AddComputer, "add-computer", "", "Create a computer object")
+	cmd.Flags().StringVarP(&opts.Read.CustomFilter, "filter", "f", "", "Bring your own filter")
+	cmd.Flags().StringVarP(&opts.Read.CustomAttributes, "attributes", "a", "", "Ask your attributes (comma separated)")
+	cmd.Flags().BoolVar(&opts.Read.Script, "script", false, "Filter for objects with flag SCRIPT")
+	cmd.Flags().BoolVar(&opts.Read.Disabled, "disabled", false, "Filter for objects with flag ACCOUNTDISABLE")
+	cmd.Flags().BoolVar(&opts.Read.HomedirRequired, "homedir-required", false, "Filter for objects with flag HOMEDIR_REQUIRED")
+	cmd.Flags().BoolVar(&opts.Read.Lockout, "lockout", false, "Filter for objects with flag LOCKOUT")
+	cmd.Flags().BoolVar(&opts.Read.PasswordNotRequired, "password-not-required", false, "Filter for objects with flag PASSWD_NOTREQD")
+	cmd.Flags().BoolVar(&opts.Read.PasswordCantChange, "password-cant-change", false, "Filter for objects with flag PASSWD_CANT_CHANGE")
+	cmd.Flags().BoolVar(&opts.Read.EncryptedTextPwdAllowed, "encrypted-text-pwd-allowed", false, "Filter for objects with flag ENCRYPTED_TEXT_PWD_ALLOWED")
+	cmd.Flags().BoolVar(&opts.Read.TempDuplicateAccount, "temp-duplicate-account", false, "Filter for objects with flag TEMP_DUPLICATE_ACCOUNT")
+	cmd.Flags().BoolVar(&opts.Read.NormalAccount, "normal-account", false, "Filter for objects with flag NORMAL_ACCOUNT")
+	cmd.Flags().BoolVar(&opts.Read.InterdomainTrustAccount, "interdomain-trust-account", false, "Filter for objects with flag INTERDOMAIN_TRUST_ACCOUNT")
+	cmd.Flags().BoolVar(&opts.Read.WorkstationTrustAccount, "workstation-trust-account", false, "Filter for objects with flag WORKSTATION_TRUST_ACCOUNT")
+	cmd.Flags().BoolVar(&opts.Read.ServerTrustAccount, "server-trust-account", false, "Filter for objects with flag SERVER_TRUST_ACCOUNT")
+	cmd.Flags().BoolVar(&opts.Read.DontExpirePassword, "password-never-expires", false, "Filter for objects with flag DONT_EXPIRE_PASSWD")
+	cmd.Flags().BoolVar(&opts.Read.MNSLogonAccount, "mns-logon-account", false, "Filter for objects with flag MNS_LOGON_ACCOUNT")
+	cmd.Flags().BoolVar(&opts.Read.SmartcardRequired, "smartcard-required", false, "Filter for objects with flag SMARTCARD_REQUIRED")
+	cmd.Flags().BoolVar(&opts.Read.TrustedForDelegation, "trusted-for-delegation", false, "Filter for objects with flag TRUSTED_FOR_DELEGATION")
+	cmd.Flags().BoolVar(&opts.Read.NotDelegated, "not-delegated", false, "Filter for objects with flag NOT_DELEGATED")
+	cmd.Flags().BoolVar(&opts.Read.UseDESKeyOnly, "use-des-key-only", false, "Filter for objects with flag USE_DES_KEY_ONLY")
+	cmd.Flags().BoolVar(&opts.Read.DontRequirePreauth, "dont-require-preauth", false, "Filter for objects with flag DONT_REQ_PREAUTH")
+	cmd.Flags().BoolVar(&opts.Read.PasswordExpired, "password-expired", false, "Filter for objects with flag PASSWORD_EXPIRED")
+	cmd.Flags().BoolVar(&opts.Read.TrustedToAuthForDelegation, "trusted-to-auth-for-delegation", false, "Filter for objects with flag TRUSTED_TO_AUTH_FOR_DELEGATION")
+	cmd.Flags().BoolVar(&opts.Read.PartialSecretsAccount, "partial-secrets-account", false, "Filter for objects with flag PARTIAL_SECRETS_ACCOUNT")
+	cmd.Flags().BoolVar(&opts.Read.AdminCount, "admin-count", false, "Enumerate objects that have an adminCount")
+	cmd.Flags().BoolVar(&opts.Read.Computers, "computers", false, "Enumerate objects that are computers")
+	cmd.Flags().BoolVar(&opts.Read.Groups, "groups", false, "Enumerate objects that are domain groups")
+	cmd.Flags().BoolVar(&opts.Read.Users, "users", false, "Enumerate objects that are enabled domain users")
+	cmd.Flags().BoolVar(&opts.Read.ActiveUsers, "active-users", false, "Enumerate objects that are active enabled domain users")
+	cmd.Flags().StringVar(&opts.Read.User, "user", "", "Get data about a single user")
+	cmd.Flags().BoolVar(&opts.Read.GetSID, "sid", false, "Get domain SID")
+	cmd.Flags().BoolVar(&opts.Read.GMSA, "gmsa", false, "Get GMSA passwords")
+	cmd.Flags().BoolVar(&opts.Read.Not, "not", false, "Negate next filter")
+	cmd.Flags().StringVar(&opts.Delete.DeleteComputer, "del-computer", "", "Delete a computer object")
+
+	return cmd
+}
+
 
 type ExecutionFunction int
 

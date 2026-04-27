@@ -14,6 +14,7 @@ import (
 	"github.com/5amu/gonetexec/pkg/proxyconn"
 	"github.com/5amu/gonetexec/pkg/smb"
 	"github.com/fatih/color"
+	"github.com/spf13/cobra"
 )
 
 type Options struct {
@@ -38,6 +39,33 @@ type Options struct {
 	printMutex     sync.Mutex
 	targets        []string
 }
+
+func NewSMBCmd() *cobra.Command {
+	opts := &Options{}
+
+	cmd := &cobra.Command{
+		Use:   "smb [TARGETS...]",
+		Short: "Own stuff using SMB",
+		Args:  cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			opts.Targets.TARGETS = args
+			opts.Run()
+		},
+	}
+
+	cmd.Flags().StringVarP(&opts.Connection.Username, "username", "u", "", "Provide username (or FILE)")
+	cmd.Flags().StringVarP(&opts.Connection.Password, "password", "p", "", "Provide password (or FILE)")
+	cmd.Flags().StringVarP(&opts.Connection.NTLM, "hashes", "H", "", "authenticate with NTLM hash")
+	cmd.Flags().StringVarP(&opts.Connection.Domain, "domain", "d", "", "provide domain")
+	cmd.Flags().IntVar(&opts.Connection.Port, "port", 445, "Provide SMB port")
+
+	cmd.Flags().BoolVar(&opts.Shares, "shares", false, "list open shares")
+	cmd.Flags().StringVarP(&opts.Exec, "exec", "x", "", "execute a command by creating a service via RPC")
+	cmd.Flags().BoolVar(&opts.Client, "client", false, "Open a client to the remote machine")
+
+	return cmd
+}
+
 
 func (o *Options) getFunction() func(string) {
 	if o.Shares {

@@ -12,83 +12,89 @@ import (
 	"github.com/5amu/gonetexec/pkg/responder"
 	"github.com/mandiant/gopacket/pkg/kerberos"
 	"github.com/mandiant/gopacket/pkg/session"
+	"github.com/spf13/cobra"
 )
 
-type Krb5Options struct {
-	Targets struct {
-		TARGETS []string `description:"Provide target IP/FQDN/FILE"`
-	} `positional-args:"yes"`
+func NewKrb5Cmd() *cobra.Command {
+	var username, password string
+	var domain string
+	var dcIP string
+	var port int
 
-	Connection struct {
-		Username string `short:"u" description:"Provide username (or FILE)"`
-		Password string `short:"p" description:"Provide password (or FILE)"`
-		Domain   string `short:"d" long:"domain" description:"Provide domain"`
-		DCIP     string `long:"dc-ip" description:"Domain Controller IP (optional)"`
-	} `group:"Connection Options" description:"Connection Options"`
+	var userEnum, responder, pitchfork, clusterbomb bool
 
-	Mode struct {
-		UserEnum  bool `long:"user-enum" description:"Enumerate valid usernames via kerberos"`
-		Responder bool `long:"responder" description:"Launch a responder (testing)"`
-	} `group:"Attack Mode"`
-
-	BruteforceStrategy struct {
-		ClusterBomb bool `long:"clusterbomb" description:"payload sets in clusterbomb mode (default)"`
-		Pitchfork   bool `long:"pitchfork" description:"payload sets in pitchfork mode"`
-	} `group:"Bruteforce Strategy"`
-}
-
-func (o *Krb5Options) Run() {
-	if o.Mode.Responder {
-		intercept()
-		return
-	}
-
-	var opts *runner.RunnerOptions = &runner.RunnerOptions{}
-	var strategy runner.CredentialDistributionStrategy
-	if o.BruteforceStrategy.Pitchfork {
-		strategy = runner.Pitchfork
-	}
-
-	targets := runner.ExtractTargets(o.Targets.TARGETS)
-	credentials := runner.NewCredentialsDispacher(
-		o.Connection.Username,
-		o.Connection.Password,
-		"",
-		strategy,
-	)
-
-	var f func(session.Target, session.Credentials) error
-	if o.Mode.UserEnum {
-		// In user enumeration mode, we don't want to stop on the first success because we
-		// want to enumerate all valid users. However, if no valid users are found
-		opts.StopOnSuccess = false
-		f = krbUserenum
-	} else {
-		// no mode will result in brute force if more than 1 user/pass is provided.
-		// In that case, we want to stop on the first success to avoid spamming the KDC with failed attempts.
-		opts.StopOnSuccess = true
-		f = krb5AttemptAuthentication
-	}
-
-	var runners []runner.Runner
-	for _, target := range targets {
-		target.Port = 88
-		for _, cred := range credentials {
-			cred.Domain = o.Connection.Domain
-			if len(targets) == 1 {
-				cred.DCIP = o.Connection.DCIP
+	cmd := &cobra.Command{
+		Use:   "krb5 [TARGETS...]",
+		Short: "Own stuff using KERBEROS",
+		Args:  cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			if responder {
+				intercept()
+				return
 			}
-			runners = append(runners, &Krb5Runner{
-				target:      target,
-				credentails: cred,
-				run:         f,
-			})
-		}
+
+			var opts *runner.RunnerOptions = &runner.RunnerOptions{}
+			var strategy runner.CredentialDistributionStrategy
+			if pitchfork {
+				strategy = runner.Pitchfork
+			}
+
+			targets := runner.ExtractTargets(args)
+			credentials := runner.NewCredentialsDispacher(
+				username,
+				password,
+				"",
+				strategy,
+			)
+
+			var f func(session.Target, session.Credentials) error
+			if userEnum {
+				// In user enumeration mode, we don't want to stop on the first success because we
+				// want to enumerate all valid users. However, if no valid users are found
+				opts.StopOnSuccess = false
+				f = krbUserenum
+			} else {
+				// no mode will result in brute force if more than 1 user/pass is provided.
+				// In that case, we want to stop on the first success to avoid spamming the KDC with failed attempts.
+				opts.StopOnSuccess = true
+				f = krb5AttemptAuthentication
+			}
+
+			var runners []runner.Runner
+			for _, target := range targets {
+				target.Port = port
+				for _, cred := range credentials {
+					cred.Domain = domain
+					if len(targets) == 1 || dcIP != "" {
+						cred.DCIP = dcIP
+					}
+					runners = append(runners, &Krb5Runner{
+						target:      target,
+						credentails: cred,
+						run:         f,
+					})
+				}
+			}
+
+			if err := runner.ParallelRun(context.Background(), runners, opts); err != nil {
+				fmt.Printf("Error: %s\n", err)
+			}
+		},
 	}
 
-	if err := runner.ParallelRun(context.Background(), runners, opts); err != nil {
-		fmt.Printf("Error: %s\n", err)
-	}
+	cmd.Flags().StringVarP(&username, "username", "u", "", "Provide username (or FILE)")
+	cmd.Flags().StringVarP(&password, "password", "p", "", "Provide password (or FILE)")
+	cmd.Flags().StringVarP(&domain, "domain", "d", "", "Provide domain")
+	cmd.Flags().StringVar(&dcIP, "dc-ip", "", "Domain Controller IP (optional)")
+	cmd.Flags().IntVar(&port, "port", 88, "Port to contact")
+
+	cmd.Flags().BoolVar(&userEnum, "user-enum", false, "Enumerate valid usernames via kerberos")
+	cmd.Flags().BoolVar(&responder, "responder", false, "Launch a responder (testing)")
+
+	cmd.Flags().BoolVar(&clusterbomb, "clusterbomb", true, "payload sets in clusterbomb mode (default)")
+	cmd.Flags().BoolVar(&pitchfork, "pitchfork", false, "payload sets in pitchfork mode")
+
+	return cmd
 }
 
 type Krb5Runner struct {

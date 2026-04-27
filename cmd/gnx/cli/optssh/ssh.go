@@ -8,6 +8,7 @@ import (
 
 	"github.com/5amu/gonetexec/internal/printer"
 	"github.com/5amu/gonetexec/internal/utils"
+	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -34,6 +35,31 @@ type Options struct {
 	credentials   []utils.Credential
 	cmd           string
 }
+
+func NewSSHCmd() *cobra.Command {
+	opts := &Options{}
+
+	cmd := &cobra.Command{
+		Use:   "ssh [TARGETS...]",
+		Short: "Own stuff using SSH",
+		Args:  cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			opts.Targets.TARGETS = args
+			opts.Run()
+		},
+	}
+
+	cmd.Flags().StringVarP(&opts.Connection.Username, "username", "u", "", "Provide username (or FILE)")
+	cmd.Flags().StringVarP(&opts.Connection.Password, "password", "p", "", "Provide password (or FILE)")
+	cmd.Flags().StringVarP(&opts.Connection.PrivKey, "private-key", "k", "", "Provide a path to a ssh private key without password")
+	cmd.Flags().IntVar(&opts.Connection.Port, "port", 22, "Port to contact")
+
+	cmd.Flags().StringVar(&opts.Mode.Exec, "exec", "", "Execute command on target host")
+	cmd.Flags().BoolVar(&opts.Mode.Shell, "shell", false, "Spawn a shell")
+
+	return cmd
+}
+
 
 func gatherSSHBanner2Map(mutex *sync.Mutex, targets []string, port int) map[string]string {
 	res := make(map[string]string)

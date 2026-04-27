@@ -16,91 +16,93 @@ import (
 	"github.com/jlaffaye/ftp"
 	"github.com/mandiant/gopacket/pkg/session"
 	"github.com/mandiant/gopacket/pkg/transport"
+	"github.com/spf13/cobra"
 )
 
-type FTPOptions struct {
-	Targets struct {
-		TARGETS []string `description:"Provide target IP/FQDN/FILE"`
-	} `positional-args:"yes"`
+func NewFTPCmd() *cobra.Command {
+	var username, password string
+	var port int
 
-	Connection struct {
-		Username string `short:"u" description:"Provide username (or FILE)"`
-		Password string `short:"p" description:"Provide password (or FILE)"`
-		Port     int    `long:"port" default:"21" description:"Port to contact"`
-	} `group:"Connection Options" description:"Connection Options"`
+	var getFile, readFile, srcFile, putFile, dstFile string
+	var list, recursiveList bool
 
-	Mode struct {
-		GetFile       string `long:"get" description:"Get specified file"`
-		PutFile       string `long:"put" description:"Put specified file"`
-		DstFile       string `long:"dst" description:"Destination file (get/put)"`
-		ReadFile      string `long:"read" description:"Read a file stored in the server"`
-		List          bool   `long:"list" description:"List files in / directory"`
-		RecursiveList bool   `long:"recursive-list" description:"List all files in FTP server (might take long)"`
-	} `group:"Possible Operations"`
-}
+	cmd := &cobra.Command{
+		Use:   "ftp [TARGETS...]",
+		Short: "Own stuff using FTP",
+		Args:  cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			targets := runner.ExtractTargets(args)
+			credentials := runner.NewCredentialsClusterBomb(
+				runner.ExtractLinesFromFileOrString(username),
+				runner.ExtractLinesFromFileOrString(password),
+			)
 
-func (o *FTPOptions) Run() {
-	targets := runner.ExtractTargets(o.Targets.TARGETS)
-	credentials := runner.NewCredentialsClusterBomb(
-		runner.ExtractLinesFromFileOrString(o.Connection.Username),
-		runner.ExtractLinesFromFileOrString(o.Connection.Password),
-	)
+			var (
+				f          func(*ftp.ServerConn, session.Target, string, string) error
+				bannerGrab bool
+			)
+			if !slices.Contains(os.Args, "-u") {
+				// If no username is provided, just try to check if an ftp server is running and grab the banner if possible.
+				f = nil
+				bannerGrab = true
 
-	var (
-		f          func(*ftp.ServerConn, session.Target, string, string) error
-		dstFile    string
-		srcFile    string
-		bannerGrab bool
-	)
-	if !slices.Contains(os.Args, "-u") {
-		// If no username is provided, just try to check if an ftp server is running and grab the banner if possible.
-		f = nil
-		bannerGrab = true
+			} else if list {
+				// List mode will list files in the root directory of the FTP server.
+				f = ftpList
+			} else if recursiveList {
+				// Recursive list mode will list all files in the FTP server, starting from the root directory.
+				f = ftpRecursiveList
+			} else if putFile != "" {
+				// Put mode will upload a local file to the FTP server. If the destination file is not specified,
+				// it will be saved with the same name as the source file in the current working directory.
+				srcFile = putFile
+				f = ftpPutFile
+			} else if readFile != "" {
+				// Read mode will read the content of a file stored in the FTP server and print it to the console.
+				srcFile = readFile
+				f = ftpReadFile
+			} else if getFile != "" {
+				// Get mode will download a file from the FTP server and save it locally. If the destination file is not specified,
+				// it will be saved with the same name as the source file in the current working directory.
+				srcFile = getFile
+				f = ftpGetFile
+			} else {
+				return
+			}
 
-	} else if o.Mode.List {
-		// List mode will list files in the root directory of the FTP server.
-		f = ftpList
-	} else if o.Mode.RecursiveList {
-		// Recursive list mode will list all files in the FTP server, starting from the root directory.
-		f = ftpRecursiveList
-	} else if o.Mode.PutFile != "" {
-		// Put mode will upload a local file to the FTP server. If the destination file is not specified,
-		// it will be saved with the same name as the source file in the current working directory.
-		srcFile = o.Mode.PutFile
-		dstFile = o.Mode.DstFile
-		f = ftpPutFile
-	} else if o.Mode.ReadFile != "" {
-		// Read mode will read the content of a file stored in the FTP server and print it to the console.
-		srcFile = o.Mode.ReadFile
-		f = ftpReadFile
-	} else if o.Mode.GetFile != "" {
-		// Get mode will download a file from the FTP server and save it locally. If the destination file is not specified,
-		// it will be saved with the same name as the source file in the current working directory.
-		srcFile = o.Mode.GetFile
-		dstFile = o.Mode.DstFile
-		f = ftpGetFile
-	} else {
-		return
+			var runners []runner.Runner
+			for _, target := range targets {
+				target.Port = port
+				for _, creds := range credentials {
+					runners = append(runners, &FTPRunner{
+						target:      target,
+						credentials: creds,
+						srcFile:     srcFile,
+						dstFile:     dstFile,
+						run:         f,
+						bannerGrab:  bannerGrab,
+					})
+				}
+			}
+
+			if err := runner.ParallelRun(context.Background(), runners, nil); err != nil {
+				fmt.Println("Error running FTP operations:", err)
+			}
+		},
 	}
 
-	var runners []runner.Runner
-	for _, target := range targets {
-		target.Port = o.Connection.Port
-		for _, creds := range credentials {
-			runners = append(runners, &FTPRunner{
-				target:      target,
-				credentials: creds,
-				srcFile:     srcFile,
-				dstFile:     dstFile,
-				run:         f,
-				bannerGrab:  bannerGrab,
-			})
-		}
-	}
+	cmd.Flags().StringVarP(&username, "username", "u", "", "Provide username (or FILE)")
+	cmd.Flags().StringVarP(&password, "password", "p", "", "Provide password (or FILE)")
+	cmd.Flags().IntVar(&port, "port", 21, "Port to contact")
 
-	if err := runner.ParallelRun(context.Background(), runners, nil); err != nil {
-		fmt.Println("Error running FTP operations:", err)
-	}
+	cmd.Flags().StringVar(&getFile, "get", "", "Get specified file")
+	cmd.Flags().StringVar(&putFile, "put", "", "Put specified file")
+	cmd.Flags().StringVar(&dstFile, "dst", "", "Destination file (get/put)")
+	cmd.Flags().StringVar(&readFile, "read", "", "Read a file stored in the server")
+	cmd.Flags().BoolVar(&list, "list", false, "List files in / directory")
+	cmd.Flags().BoolVar(&recursiveList, "recursive-list", false, "List all files in FTP server (might take long)")
+
+	return cmd
 }
 
 type FTPRunner struct {

@@ -12,6 +12,7 @@ import (
 	"github.com/5amu/gonetexec/internal/utils"
 	"github.com/5amu/gonetexec/pkg/proxyconn"
 	"github.com/mitchellh/go-vnc"
+	"github.com/spf13/cobra"
 )
 
 type Options struct {
@@ -29,6 +30,26 @@ type Options struct {
 	credentials   []utils.Credential
 	target2Banner map[string]string
 }
+
+func NewVNCCmd() *cobra.Command {
+	opts := &Options{}
+
+	cmd := &cobra.Command{
+		Use:   "vnc [TARGETS...]",
+		Short: "Own stuff using VNC",
+		Args:  cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			opts.Targets.TARGETS = args
+			opts.Run()
+		},
+	}
+
+	cmd.Flags().StringVarP(&opts.Connection.Password, "password", "p", "", "Provide password (or FILE)")
+	cmd.Flags().IntVar(&opts.Connection.Port, "port", 5900, "Port to contact")
+
+	return cmd
+}
+
 
 func (o *Options) Run() {
 	o.targets = utils.ExtractTargets(o.Targets.TARGETS)
