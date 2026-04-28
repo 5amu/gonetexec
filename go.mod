@@ -4,7 +4,6 @@ go 1.24.13
 
 require (
 	github.com/0xrawsec/golang-etw v1.6.2
-	github.com/5amu/go-flags v0.0.0-20240129164246-3942f39c22b8
 	github.com/fatih/color v1.16.0
 	github.com/geoffgarside/ber v1.1.0
 	github.com/ghostiam/binstruct v1.3.2
@@ -14,12 +13,14 @@ require (
 	github.com/lkarlslund/binstruct v1.3.1-0.20230504093039-8f69d6d48410
 	github.com/masterzen/winrm v0.0.0-20231227165926-e811dad5ac77
 	github.com/mitchellh/go-vnc v0.0.0-20150629162542-723ed9867aed
-	github.com/stretchr/testify v1.9.0
+	github.com/spf13/cobra v1.10.2
+	github.com/stretchr/testify v1.10.0
 )
 
 require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/spf13/cobra v1.10.2 // indirect
+	github.com/oiweiwei/go-msrpc v1.2.12 // indirect
+	github.com/oiweiwei/gokrb5.fork/v9 v9.0.6 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
 )
 
@@ -30,7 +31,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/mandiant/gopacket v0.0.0-20260422152958-4890b97162e5
+	github.com/mandiant/gopacket v0.0.0-20260424163850-5d927b8e6b8d
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/term v0.39.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
@@ -38,7 +39,7 @@ require (
 )
 
 require (
-	github.com/Azure/go-ntlmssp v0.0.0-20221128193559-754e69321358 // indirect
+	github.com/Azure/go-ntlmssp v0.1.1 // indirect
 	github.com/ChrisTrenkamp/goxpath v0.0.0-20210404020558-97928f7e12b6 // indirect
 	github.com/bodgit/ntlmssp v0.0.0-20231122144230-2b2bca29f22b // indirect
 	github.com/bodgit/windows v1.0.1 // indirect

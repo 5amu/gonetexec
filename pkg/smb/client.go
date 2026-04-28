@@ -74,40 +74,40 @@ func (d *Dialer) DialContext(ctx context.Context, tcpConn net.Conn) (*Session, e
 		return nil, err
 	}
 
-	return &Session{s: s, ctx: context.Background(), addr: tcpConn.RemoteAddr().String()}, nil
+	return &Session{S: s, ctx: context.Background(), addr: tcpConn.RemoteAddr().String()}, nil
 }
 
 // Session represents a SMB session.
 type Session struct {
-	s    *session
+	S    *session
 	ctx  context.Context
 	addr string
 }
 
 func (c *Session) GetSessionID() []byte {
 	b := make([]byte, 8)
-	binary.LittleEndian.PutUint64(b, c.s.sessionId)
+	binary.LittleEndian.PutUint64(b, c.S.sessionId)
 	return b
 }
 
 func (c *Session) GetNtProofStr() []byte {
-	return c.s.nproofstr
+	return c.S.nproofstr
 }
 
 func (c *Session) GetSessionKey() []byte {
-	return c.s.sessionk
+	return c.S.sessionk
 }
 
 func (c *Session) WithContext(ctx context.Context) *Session {
 	if ctx == nil {
 		panic("nil context")
 	}
-	return &Session{s: c.s, ctx: ctx, addr: c.addr}
+	return &Session{S: c.S, ctx: ctx, addr: c.addr}
 }
 
 // Logoff invalidates the current SMB session.
 func (c *Session) Logoff() error {
-	return c.s.logoff(c.ctx)
+	return c.S.logoff(c.ctx)
 }
 
 // Mount mounts the SMB share.
@@ -125,7 +125,7 @@ func (c *Session) Mount(sharename string) (*Share, error) {
 		return nil, err
 	}
 
-	tc, err := treeConnect(c.s, sharename, 0, c.ctx)
+	tc, err := treeConnect(c.S, sharename, 0, c.ctx)
 	if err != nil {
 		return nil, err
 	}

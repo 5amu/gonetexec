@@ -59,12 +59,12 @@ func FingerprintWithDialer(host string, port int, dialer func(network string, ad
 	initiator := d.Initiator.(*NTLMSSPInitiator)
 
 	if s != nil {
-		if s.s != nil {
-			info.SigningRequired = s.s.requireSigning
+		if s.S != nil {
+			info.SigningRequired = s.S.RequireSigning
 		}
 	}
 
-	sd := initiator.ntlm.SessionDetails()
+	sd := initiator.Ntlm.SessionDetails()
 	info.OSVersion = fmt.Sprintf("%d.%d.%d", sd.Version.ProductMajorVersion, sd.Version.ProductMinorVersion, sd.Version.ProductBuild)
 
 	infomap := initiator.GetInfoMap()

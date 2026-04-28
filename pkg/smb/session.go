@@ -37,7 +37,7 @@ func sessionSetup(conn *conn, i Initiator, ctx context.Context) (*session, error
 		PreviousSessionId: 0,
 	}
 
-	if conn.requireSigning {
+	if conn.RequireSigning {
 		req.SecurityMode = smb2.SMB2_NEGOTIATE_SIGNING_REQUIRED
 	} else {
 		req.SecurityMode = smb2.SMB2_NEGOTIATE_SIGNING_ENABLED
@@ -73,7 +73,7 @@ func sessionSetup(conn *conn, i Initiator, ctx context.Context) (*session, error
 	}
 
 	sessionFlags := r.SessionFlags()
-	if conn.requireSigning {
+	if conn.RequireSigning {
 		if sessionFlags&smb2.SMB2_SESSION_FLAG_IS_GUEST != 0 {
 			return nil, &InvalidResponseError{"guest account doesn't support signing"}
 		}
