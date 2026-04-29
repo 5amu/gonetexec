@@ -2,8 +2,6 @@ module github.com/5amu/goad
 
 go 1.24.13
 
-replace github.com/mandiant/gopacket => ../../gopacket
-
 require (
 	github.com/0xrawsec/golang-etw v1.6.2
 	github.com/5amu/go-flags v0.0.0-20240129164246-3942f39c22b8
@@ -26,7 +24,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/mandiant/gopacket v0.0.0 // indirect
+	github.com/mandiant/gopacket v0.0.0-20260424163850-5d927b8e6b8d // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/term v0.39.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
@@ -34,7 +32,7 @@ require (
 )
 
 require (
-	github.com/Azure/go-ntlmssp v0.0.0-20221128193559-754e69321358 // indirect
+	github.com/Azure/go-ntlmssp v0.1.1 // indirect
 	github.com/ChrisTrenkamp/goxpath v0.0.0-20210404020558-97928f7e12b6 // indirect
 	github.com/bodgit/ntlmssp v0.0.0-20231122144230-2b2bca29f22b // indirect
 	github.com/bodgit/windows v1.0.1 // indirect
