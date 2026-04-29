@@ -6,7 +6,6 @@ require (
 	github.com/0xrawsec/golang-etw v1.6.2
 	github.com/fatih/color v1.16.0
 	github.com/geoffgarside/ber v1.1.0
-	github.com/ghostiam/binstruct v1.3.2
 	github.com/jlaffaye/ftp v0.2.0
 	github.com/lkarlslund/binstruct v1.3.1-0.20230504093039-8f69d6d48410
 	github.com/masterzen/winrm v0.0.0-20231227165926-e811dad5ac77
