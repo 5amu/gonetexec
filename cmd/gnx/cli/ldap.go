@@ -15,7 +15,6 @@ import (
 
 	"github.com/5amu/gonetexec/internal/logger"
 	"github.com/5amu/gonetexec/internal/runner"
-	"github.com/5amu/gonetexec/internal/utils"
 	"github.com/mandiant/gopacket/pkg/kerberos"
 	altldap "github.com/mandiant/gopacket/pkg/ldap"
 	"github.com/mandiant/gopacket/pkg/session"
@@ -33,28 +32,28 @@ const ldapDefaultPort = 389
 type userAccountControl int
 
 const (
-	uacScript                         userAccountControl = 1
-	uacAccountDisable                 userAccountControl = 2
-	uacHomedirRequired                userAccountControl = 8
-	uacLockout                        userAccountControl = 16
-	uacPasswdNotReqd                  userAccountControl = 32
-	uacPasswdCantChange               userAccountControl = 64
-	uacEncryptedTextPwdAllowed        userAccountControl = 128
-	uacTempDuplicateAccount           userAccountControl = 256
-	uacNormalAccount                  userAccountControl = 512
-	uacInterdomainTrustAccount        userAccountControl = 2048
-	uacWorkstationTrustAccount        userAccountControl = 4096
-	uacServerTrustAccount             userAccountControl = 8192
-	uacDontExpirePassword             userAccountControl = 65536
-	uacMNSLogonAccount                userAccountControl = 131072
-	uacSmartcardRequired              userAccountControl = 262144
-	uacTrustedForDelegation           userAccountControl = 524288
-	uacNotDelegated                   userAccountControl = 1048576
-	uacUseDESKeyOnly                  userAccountControl = 2097152
-	uacDontRequirePreauth             userAccountControl = 4194304
-	uacPasswordExpired                userAccountControl = 8388608
-	uacTrustedToAuthForDelegation     userAccountControl = 16777216
-	uacPartialSecretsAccount          userAccountControl = 67108864
+	uacScript                     userAccountControl = 1
+	uacAccountDisable             userAccountControl = 2
+	uacHomedirRequired            userAccountControl = 8
+	uacLockout                    userAccountControl = 16
+	uacPasswdNotReqd              userAccountControl = 32
+	uacPasswdCantChange           userAccountControl = 64
+	uacEncryptedTextPwdAllowed    userAccountControl = 128
+	uacTempDuplicateAccount       userAccountControl = 256
+	uacNormalAccount              userAccountControl = 512
+	uacInterdomainTrustAccount    userAccountControl = 2048
+	uacWorkstationTrustAccount    userAccountControl = 4096
+	uacServerTrustAccount         userAccountControl = 8192
+	uacDontExpirePassword         userAccountControl = 65536
+	uacMNSLogonAccount            userAccountControl = 131072
+	uacSmartcardRequired          userAccountControl = 262144
+	uacTrustedForDelegation       userAccountControl = 524288
+	uacNotDelegated               userAccountControl = 1048576
+	uacUseDESKeyOnly              userAccountControl = 2097152
+	uacDontRequirePreauth         userAccountControl = 4194304
+	uacPasswordExpired            userAccountControl = 8388608
+	uacTrustedToAuthForDelegation userAccountControl = 16777216
+	uacPartialSecretsAccount      userAccountControl = 67108864
 )
 
 // ---------------------------------------------------------------------------
@@ -774,8 +773,8 @@ func (r *LDAPRunner) create(ctx context.Context, domain string) error {
 		},
 	}
 
-	password := utils.GeneratePassword(12)
-	attrs[attrUnicodePassword] = []string{utils.StringToUTF16(password)}
+	password := generatePassword(12)
+	attrs[attrUnicodePassword] = []string{stringToUTF16String(password)}
 
 	if err := client.Add(dn, attrs); err != nil {
 		l.Error(fmt.Sprintln(err))
@@ -859,7 +858,7 @@ func (r *LDAPRunner) asreproast(ctx context.Context, domain string) error {
 	if len(hashes) == 0 {
 		return nil
 	}
-	if err := utils.WriteLines(hashes, r.hashFile); err != nil {
+	if err := writeLines(hashes, r.hashFile); err != nil {
 		l.Error(fmt.Sprintln(err))
 		return err
 	}
@@ -912,7 +911,7 @@ func (r *LDAPRunner) kerberoast(ctx context.Context, domain string) error {
 	if len(hashes) == 0 {
 		return nil
 	}
-	if err := utils.WriteLines(hashes, r.krbFile); err != nil {
+	if err := writeLines(hashes, r.krbFile); err != nil {
 		l.Error(fmt.Sprintln(err))
 		return err
 	}
