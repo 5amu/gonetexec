@@ -20,6 +20,7 @@ import (
 	"github.com/mandiant/gopacket/pkg/dcerpc/svcctl"
 	"github.com/mandiant/gopacket/pkg/session"
 	"github.com/mandiant/gopacket/pkg/smb"
+	"github.com/mandiant/gopacket/pkg/transport"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -130,7 +131,11 @@ func (r *SMBRunner) Start(ctx context.Context) error {
 	r.cancelCtx = cancel
 	defer r.Stop()
 
-	info, err := altsmb.Fingerprint(r.target.Host, r.target.Port)
+	conn, err := transport.Dial("tcp", r.target.Addr())
+	if err != nil {
+		return err
+	}
+	info, err := altsmb.FingerprintWithConn(conn)
 	if err != nil {
 		fmt.Println(err)
 		return err

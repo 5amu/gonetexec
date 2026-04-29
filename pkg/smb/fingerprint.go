@@ -30,24 +30,15 @@ type SMBFingerprint struct {
 }
 
 func Fingerprint(host string, port int) (*SMBFingerprint, error) {
-	var d net.Dialer
-	return FingerprintWithDialer(host, port, d.Dial)
+	conn, err := net.Dial("tcp", fmt.Sprintf("%v:%d", string(net.ParseIP(host)), port))
+	if err != nil {
+		return nil, err
+	}
+	return FingerprintWithConn(conn)
 }
 
-func FingerprintWithDialer(host string, port int, dialer func(network string, addr string) (net.Conn, error)) (*SMBFingerprint, error) {
-	conn1, err := dialer("tcp", fmt.Sprintf("%s:%d", host, port))
-	if err != nil {
-		return nil, err
-	}
-
+func FingerprintWithConn(conn net.Conn) (*SMBFingerprint, error) {
 	var info SMBFingerprint
-	info.V1Support = NewV1Client().WithConn(conn1).IsSMBv1()
-	go conn1.Close()
-
-	conn3, err := dialer("tcp", fmt.Sprintf("%s:%d", host, port))
-	if err != nil {
-		return nil, err
-	}
 
 	d := &Dialer{
 		Initiator: &NTLMSSPInitiator{},
@@ -55,7 +46,7 @@ func FingerprintWithDialer(host string, port int, dialer func(network string, ad
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	s, _ := d.DialContext(ctx, conn3)
+	s, _ := d.DialContext(ctx, conn)
 	initiator := d.Initiator.(*NTLMSSPInitiator)
 
 	if s != nil {
