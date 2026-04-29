@@ -2,9 +2,10 @@ package responder
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
+	"unicode/utf16"
 
-	"github.com/5amu/gonetexec/pkg/mstypes"
 	"github.com/lkarlslund/binstruct"
 )
 
@@ -126,6 +127,17 @@ func GetChallenge(pd []byte) []byte {
 	return message.Challenge
 }
 
+func utf16String(b []byte) string {
+	if len(b)%2 != 0 {
+		b = append(b, 0)
+	}
+	data := make([]uint16, len(b)/2)
+	for i := 0; i < len(data); i++ {
+		data[i] = binary.LittleEndian.Uint16(b[i*2:])
+	}
+	return string(utf16.Decode(data))
+}
+
 func NewNTLMResult(pd []byte, challenge []byte) (*NTLMResult, error) {
 	offset := bytes.Index(pd, []byte{0x4e, 0x54, 0x4c, 0x4d, 0x53, 0x53, 0x50, 0x00})
 	if offset == -1 {
@@ -140,16 +152,16 @@ func NewNTLMResult(pd []byte, challenge []byte) (*NTLMResult, error) {
 
 	if msg3.NTLMHash.Length == 24 {
 		return &NTLMResult{
-			User:        mstypes.UTF16String(msg3.UserName.Data),
-			WorkStation: mstypes.UTF16String(msg3.WorkStationName.Data),
-			Challenge:   challenge,
-			Hash:        msg3.NTLMHash.Data,
+		User:        utf16String(msg3.UserName.Data),
+		WorkStation: utf16String(msg3.WorkStationName.Data),
+		Challenge:   challenge,
+		Hash:        msg3.NTLMHash.Data,
 		}, nil
 	} else if msg3.NTLMHash.Length > 24 {
 		return &NTLMResult{
-			User:        mstypes.UTF16String(msg3.UserName.Data),
-			WorkStation: mstypes.UTF16String(msg3.WorkStationName.Data),
-			Target:      mstypes.UTF16String(msg3.TargetName.Data),
+			User:        utf16String(msg3.UserName.Data),
+			WorkStation: utf16String(msg3.WorkStationName.Data),
+			Target:      utf16String(msg3.TargetName.Data),
 			Challenge:   challenge,
 			Hash:        msg3.NTLMHash.Data[:16],
 			MoreHash:    msg3.NTLMHash.Data[16:],
@@ -157,9 +169,9 @@ func NewNTLMResult(pd []byte, challenge []byte) (*NTLMResult, error) {
 	}
 	return nil, fmt.Errorf(
 		"received short NTLM hash: %s:%s:%s:%X:%X:%X",
-		mstypes.UTF16String(msg3.UserName.Data),
-		mstypes.UTF16String(msg3.WorkStationName.Data),
-		mstypes.UTF16String(msg3.TargetName.Data),
+		utf16String(msg3.UserName.Data),
+		utf16String(msg3.WorkStationName.Data),
+		utf16String(msg3.TargetName.Data),
 		challenge,
 		msg3.NTLMHash.Data,
 		msg3.LMHash.Data,

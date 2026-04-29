@@ -7,7 +7,6 @@ require (
 	github.com/fatih/color v1.16.0
 	github.com/geoffgarside/ber v1.1.0
 	github.com/ghostiam/binstruct v1.3.2
-	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/jlaffaye/ftp v0.2.0
 	github.com/lkarlslund/binstruct v1.3.1-0.20230504093039-8f69d6d48410
 	github.com/masterzen/winrm v0.0.0-20231227165926-e811dad5ac77
@@ -20,6 +19,7 @@ require (
 require (
 	github.com/go-ldap/ldap/v3 v3.4.12 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/jcmturner/gokrb5/v8 v8.4.4 // indirect
 	github.com/oiweiwei/go-msrpc v1.2.12 // indirect
 	github.com/oiweiwei/gokrb5.fork/v9 v9.0.6 // indirect
 )
@@ -58,7 +58,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/tidwall/transform v0.0.0-20201103190739-32f242e2dbde
 	golang.org/x/crypto v0.36.0
-	golang.org/x/net v0.38.0
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/text v0.23.0
 )
