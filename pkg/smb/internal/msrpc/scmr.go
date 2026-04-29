@@ -1,7 +1,7 @@
 package msrpc
 
 import (
-	"github.com/5amu/goad/pkg/smb/internal/utf16le"
+	"github.com/5amu/gonetexec/pkg/smb/internal/utf16le"
 )
 
 // e1af8308-5d1f-11c9-91a4-08002b14a0fa

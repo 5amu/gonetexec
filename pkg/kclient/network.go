@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/5amu/goad/pkg/proxyconn"
+	"github.com/5amu/gonetexec/pkg/proxyconn"
 	"github.com/jcmturner/gokrb5/v8/iana/errorcode"
 	"github.com/jcmturner/gokrb5/v8/messages"
 )

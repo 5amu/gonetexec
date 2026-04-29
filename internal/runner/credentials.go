@@ -30,14 +30,14 @@ func NewCredentialsNTLM(users []string, hash string) (out []session.Credentials)
 	return
 }
 
-type Strategy int
+type CredentialDistributionStrategy int
 
 const (
-	Clusterbomb Strategy = iota
+	Clusterbomb CredentialDistributionStrategy = iota
 	Pitchfork
 )
 
-func NewCredentialsDispacher(users, passwords, ntlm string, strategy Strategy) []session.Credentials {
+func NewCredentialsDispacher(users, passwords, ntlm string, strategy CredentialDistributionStrategy) []session.Credentials {
 	if ntlm != "" {
 		return NewCredentialsNTLM(ExtractLinesFromFileOrString(users), ntlm)
 	}

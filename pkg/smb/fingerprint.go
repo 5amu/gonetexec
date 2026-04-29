@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/5amu/goad/pkg/smb/internal/utf16le"
+	"github.com/5amu/gonetexec/pkg/smb/internal/utf16le"
 )
 
 type SMBFingerprint struct {
@@ -59,12 +59,16 @@ func FingerprintWithDialer(host string, port int, dialer func(network string, ad
 	initiator := d.Initiator.(*NTLMSSPInitiator)
 
 	if s != nil {
-		if s.s != nil {
-			info.SigningRequired = s.s.requireSigning
+		if s.S != nil {
+			info.SigningRequired = s.S.RequireSigning
 		}
 	}
 
-	sd := initiator.ntlm.SessionDetails()
+	if initiator.Ntlm == nil {
+		return &info, nil
+	}
+
+	sd := initiator.Ntlm.SessionDetails()
 	info.OSVersion = fmt.Sprintf("%d.%d.%d", sd.Version.ProductMajorVersion, sd.Version.ProductMinorVersion, sd.Version.ProductBuild)
 
 	infomap := initiator.GetInfoMap()

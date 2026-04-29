@@ -10,8 +10,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/5amu/goad/pkg/smb/internal/erref"
-	"github.com/5amu/goad/pkg/smb/internal/smb2"
+	"github.com/5amu/gonetexec/pkg/smb/internal/erref"
+	"github.com/5amu/gonetexec/pkg/smb/internal/smb2"
 )
 
 // Negotiator contains options for func (*Dialer) Dial.
@@ -139,7 +139,7 @@ retry:
 		return nil, &InvalidResponseError{"unexpected dialect returned"}
 	}
 
-	conn.requireSigning = n.RequireMessageSigning || r.SecurityMode()&smb2.SMB2_NEGOTIATE_SIGNING_REQUIRED != 0
+	conn.RequireSigning = n.RequireMessageSigning || r.SecurityMode()&smb2.SMB2_NEGOTIATE_SIGNING_REQUIRED != 0
 	conn.capabilities = clientCapabilities & r.Capabilities()
 	conn.dialect = r.DialectRevision()
 	conn.maxTransactSize = r.MaxTransactSize()
@@ -290,7 +290,7 @@ type conn struct {
 	maxTransactSize           uint32
 	maxReadSize               uint32
 	maxWriteSize              uint32
-	requireSigning            bool
+	RequireSigning            bool
 	capabilities              uint32
 	preauthIntegrityHashId    uint16
 	preauthIntegrityHashValue [64]byte
@@ -713,7 +713,7 @@ func (conn *conn) tryVerify(pkt []byte, isEncrypted bool) error {
 				}
 			}
 		} else {
-			if conn.requireSigning && !isEncrypted {
+			if conn.RequireSigning && !isEncrypted {
 				if conn.session != nil {
 					if conn.session.sessionFlags&(smb2.SMB2_SESSION_FLAG_IS_GUEST|smb2.SMB2_SESSION_FLAG_IS_NULL) == 0 {
 						if conn.session.sessionId == p.SessionId() {

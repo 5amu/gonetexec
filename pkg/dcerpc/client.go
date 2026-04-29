@@ -3,7 +3,7 @@ package dcerpc
 import (
 	"net"
 
-	"github.com/5amu/goad/pkg/auth"
+	"github.com/5amu/gonetexec/pkg/auth"
 )
 
 type Client struct {

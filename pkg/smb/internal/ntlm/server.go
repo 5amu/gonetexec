@@ -9,7 +9,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/5amu/goad/pkg/smb/internal/utf16le"
+	"github.com/5amu/gonetexec/pkg/smb/internal/utf16le"
 )
 
 // NTLM v2 server

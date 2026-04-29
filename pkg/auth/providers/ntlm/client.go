@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/5amu/goad/pkg/encoder"
-	"github.com/5amu/goad/pkg/utils"
+	"github.com/5amu/gonetexec/pkg/encoder"
+	"github.com/5amu/gonetexec/pkg/utils"
 	"golang.org/x/crypto/md4"
 )
 

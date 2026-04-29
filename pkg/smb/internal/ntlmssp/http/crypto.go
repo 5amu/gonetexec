@@ -5,7 +5,7 @@ import (
 	"crypto/x509"
 	"hash"
 
-	"github.com/5amu/goad/pkg/smb/internal/ntlmssp"
+	"github.com/5amu/gonetexec/pkg/smb/internal/ntlmssp"
 )
 
 func signatureAlgorithmHash(algo x509.SignatureAlgorithm) crypto.Hash {

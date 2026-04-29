@@ -3,7 +3,7 @@ package msrpc
 import (
 	"encoding/hex"
 
-	"github.com/5amu/goad/pkg/encoder"
+	"github.com/5amu/gonetexec/pkg/encoder"
 )
 
 type RpcBindRequestContextEntry struct {
