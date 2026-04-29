@@ -12,8 +12,8 @@ import (
 
 	"github.com/5amu/gonetexec/internal/logger"
 	"github.com/5amu/gonetexec/internal/runner"
-	"github.com/5amu/gonetexec/pkg/proxyconn"
 	"github.com/mandiant/gopacket/pkg/session"
+	"github.com/mandiant/gopacket/pkg/transport"
 	"github.com/mitchellh/go-vnc"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -102,7 +102,7 @@ func gatherVNCBanners(targets []session.Target, port int) map[string]string {
 }
 
 func verifyVNC(host string, port int) bool {
-	conn, err := proxyconn.GetConnection(host, port)
+	conn, err := transport.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
 	if err != nil {
 		return false
 	}
@@ -157,7 +157,7 @@ func (r *VNCRunner) Stop() {
 }
 
 func (r *VNCRunner) authenticate(ctx context.Context, l *slog.Logger) error {
-	conn, err := proxyconn.GetConnection(r.target.Host, r.port)
+	conn, err := transport.Dial("tcp", fmt.Sprintf("%s:%d", r.target.Host, r.port))
 	if err != nil {
 		l.Error(fmt.Sprintln(err))
 		return err

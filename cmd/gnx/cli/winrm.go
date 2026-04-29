@@ -11,8 +11,8 @@ import (
 
 	"github.com/5amu/gonetexec/internal/logger"
 	"github.com/5amu/gonetexec/internal/runner"
-	putils "github.com/5amu/gonetexec/pkg/proxyconn"
 	"github.com/mandiant/gopacket/pkg/session"
+	"github.com/mandiant/gopacket/pkg/transport"
 	"github.com/masterzen/winrm"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -127,7 +127,7 @@ func (r *WinRMRunner) Stop() {
 func (r *WinRMRunner) winrmClient(creds session.Credentials) (*winrm.Client, error) {
 	params := winrm.DefaultParameters
 	params.TransportDecorator = func() winrm.Transporter {
-		return winrm.NewClientNTLMWithDial(putils.GetDialFunc())
+		return winrm.NewClientNTLMWithDial(transport.Dial)
 	}
 	return winrm.NewClientWithParameters(
 		winrm.NewEndpoint(r.target.Host, r.port, r.useSSL, true, nil, nil, nil, 0),

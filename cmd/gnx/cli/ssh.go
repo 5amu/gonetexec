@@ -13,8 +13,8 @@ import (
 
 	"github.com/5amu/gonetexec/internal/logger"
 	"github.com/5amu/gonetexec/internal/runner"
-	"github.com/5amu/gonetexec/pkg/proxyconn"
 	"github.com/mandiant/gopacket/pkg/session"
+	"github.com/mandiant/gopacket/pkg/transport"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"golang.org/x/crypto/ssh"
@@ -118,7 +118,7 @@ func gatherBanners(targets []session.Target, port int) map[string]string {
 }
 
 func grabBanner(host string, port int) (string, error) {
-	conn, err := proxyconn.GetConnection(host, port)
+	conn, err := transport.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
 	if err != nil {
 		return "", err
 	}
@@ -217,7 +217,7 @@ func connectWithKey(user, keyPath, host string, port int) (*ssh.Client, error) {
 }
 
 func sshConnect(user string, signer ssh.AuthMethod, host string, port int) (*ssh.Client, error) {
-	conn, err := proxyconn.GetConnection(host, port)
+	conn, err := transport.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
 	if err != nil {
 		return nil, err
 	}

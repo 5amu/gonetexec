@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/5amu/gonetexec/pkg/proxyconn"
+	"github.com/mandiant/gopacket/pkg/transport"
 	"github.com/jcmturner/gokrb5/v8/iana/errorcode"
 	"github.com/jcmturner/gokrb5/v8/messages"
 )
@@ -103,7 +103,7 @@ func dialSendUDP(kdcs map[int]string, b []byte) ([]byte, error) {
 			return nil, err
 		}
 
-		conn, err := proxyconn.GetConnectionUDP(host, port)
+		conn, err := transport.DialUDP(fmt.Sprintf("%s:%d", host, port))
 		if err != nil {
 			errs = append(errs, fmt.Sprintf("error setting dial timeout on connection to %s: %v", kdcs[i], err))
 			continue
@@ -112,8 +112,7 @@ func dialSendUDP(kdcs map[int]string, b []byte) ([]byte, error) {
 			errs = append(errs, fmt.Sprintf("error setting deadline on connection to %s: %v", kdcs[i], err))
 			continue
 		}
-		// conn is guaranteed to be a UDPConn
-		rb, err := sendUDP(conn.(*net.UDPConn), b)
+		rb, err := sendUDP(conn, b)
 		if err != nil {
 			errs = append(errs, fmt.Sprintf("error sneding to %s: %v", kdcs[i], err))
 			continue
@@ -177,7 +176,7 @@ func dialSendTCP(kdcs map[int]string, b []byte) ([]byte, error) {
 			return nil, err
 		}
 
-		conn, err := proxyconn.GetConnection(host, port)
+		conn, err := transport.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
 		if err != nil {
 			errs = append(errs, fmt.Sprintf("error setting dial timeout on connection to %s: %v", kdcs[i], err))
 			continue
@@ -186,7 +185,6 @@ func dialSendTCP(kdcs map[int]string, b []byte) ([]byte, error) {
 			errs = append(errs, fmt.Sprintf("error setting deadline on connection to %s: %v", kdcs[i], err))
 			continue
 		}
-		// conn is guaranteed to be a TCPConn
 		rb, err := sendTCP(conn, b)
 		if err != nil {
 			errs = append(errs, fmt.Sprintf("error sneding to %s: %v", kdcs[i], err))
