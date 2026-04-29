@@ -13,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/5amu/gonetexec/pkg/dcerpc"
 	"github.com/5amu/gonetexec/pkg/smb/internal/erref"
 	"github.com/5amu/gonetexec/pkg/smb/internal/smb2"
 )
@@ -2018,63 +2017,6 @@ func (fs *FileStat) IsDir() bool {
 
 func (fs *FileStat) Sys() interface{} {
 	return fs
-}
-
-func (c *Session) GetNamedPipe(fname string) (*File, error) {
-	servername := c.addr
-	fs, err := c.Mount(fmt.Sprintf(`\\%s\IPC$`, servername))
-	if err != nil {
-		return nil, err
-	}
-	fs = fs.WithContext(c.ctx)
-
-	iface := dcerpc.MSRPC_SCMR
-	syntax := dcerpc.MSRPC_NDR32
-
-	f, err := fs.OpenFile(iface.NamedPipe, os.O_RDWR, 0666)
-	if err != nil {
-		return nil, err
-	}
-
-	bindS := dcerpc.NewBindStruct(syntax.UUID, syntax.Version, iface.UUID, iface.Version, iface.VersionMinor)
-	buf := bindS.Bytes()
-
-	writeReq := &smb2.WriteRequest{
-		FileId:           f.fd,
-		Flags:            0,
-		Channel:          0,
-		RemainingBytes:   0,
-		Offset:           0,
-		WriteChannelInfo: []smb2.Encoder{},
-		Data:             buf,
-	}
-
-	writeReq.CreditCharge, _, err = f.fs.loanCredit(writeReq.Size())
-	if err != nil {
-		return nil, err
-	}
-	f.fs.chargeCredit(writeReq.CreditCharge)
-
-	writeRes, err := f.sendRecv(smb2.SMB2_WRITE, writeReq)
-	if err != nil {
-		return nil, &os.PathError{Op: "createService", Path: f.name, Err: err}
-	}
-
-	if smb2.WriteResponseDecoder(writeRes).IsInvalid() {
-		return nil, fmt.Errorf("invalid write response")
-	}
-
-	buf = make([]byte, 1048576)
-	_, err = f.Read(buf)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = dcerpc.ParseBindResponse(buf)
-	if err != nil {
-		return nil, err
-	}
-	return f, nil
 }
 
 func (c *Session) sendRPC(np *File, payload []byte) ([]byte, error) {
