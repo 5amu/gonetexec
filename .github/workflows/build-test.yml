@@ -37,7 +37,7 @@ jobs:
       
       - name: Build
         run: go build .
-        working-directory: cmd/goad/
+        working-directory: cmd/gnx/
 
       - name: Test
         env:
