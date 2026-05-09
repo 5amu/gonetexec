@@ -24,7 +24,7 @@ func NewKrb5Cmd() *cobra.Command {
 	var userEnum, responder, pitchfork, clusterbomb bool
 
 	cmd := &cobra.Command{
-		Use:   "krb5 [TARGETS...]",
+		Use:   "krb [TARGETS...]",
 		Short: "Own stuff using KERBEROS",
 		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
