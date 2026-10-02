@@ -7,8 +7,7 @@ import (
 	"os"
 	"strings"
 
-	altsmb "github.com/5amu/gonetexec/pkg/smb"
-
+	"github.com/5amu/gonetexec/internal/fingerprint"
 	"github.com/5amu/gonetexec/internal/logger"
 	"github.com/5amu/gonetexec/internal/runner"
 	"github.com/mandiant/gopacket/pkg/session"
@@ -98,7 +97,7 @@ func (r *WinRMRunner) Start(ctx context.Context) error {
 	r.cancelCtx = cancel
 	defer r.Stop()
 
-	info, err := altsmb.Fingerprint(r.target.Host, 445)
+	info, err := fingerprint.SMB(session.Target{Host: r.target.Host, IP: r.target.IP, Port: 445})
 	if err != nil {
 		l := logger.New("WINRM", r.target.Host, r.target.Host, r.port)
 		l.Error(fmt.Sprintln(err))
@@ -141,7 +140,7 @@ func (r *WinRMRunner) winrmClient(creds session.Credentials) (*winrm.Client, err
 // Actions
 // ---------------------------------------------------------------------------
 
-func (r *WinRMRunner) authenticate(ctx context.Context, info *altsmb.SMBFingerprint) error {
+func (r *WinRMRunner) authenticate(ctx context.Context, info *fingerprint.SMBInfo) error {
 	l := logger.New("WINRM", r.target.Host, info.NetBIOSComputerName, r.port)
 
 	client, err := r.winrmClient(r.creds)
@@ -161,7 +160,7 @@ func (r *WinRMRunner) authenticate(ctx context.Context, info *altsmb.SMBFingerpr
 	return nil
 }
 
-func (r *WinRMRunner) exec(ctx context.Context, info *altsmb.SMBFingerprint) error {
+func (r *WinRMRunner) exec(ctx context.Context, info *fingerprint.SMBInfo) error {
 	l := logger.New("WINRM", r.target.Host, info.NetBIOSComputerName, r.port)
 
 	var client *winrm.Client
@@ -196,7 +195,7 @@ func (r *WinRMRunner) exec(ctx context.Context, info *altsmb.SMBFingerprint) err
 	return nil
 }
 
-func (r *WinRMRunner) openShell(ctx context.Context, info *altsmb.SMBFingerprint) error {
+func (r *WinRMRunner) openShell(ctx context.Context, info *fingerprint.SMBInfo) error {
 	l := logger.New("WINRM", r.target.Host, info.NetBIOSComputerName, r.port)
 
 	client, err := r.winrmClient(r.creds)

@@ -12,15 +12,14 @@ import (
 	"time"
 	"unicode/utf16"
 
+	"github.com/5amu/gonetexec/internal/fingerprint"
 	"github.com/5amu/gonetexec/internal/logger"
 	"github.com/5amu/gonetexec/internal/runner"
-	altsmb "github.com/5amu/gonetexec/pkg/smb"
 	"github.com/fatih/color"
 	"github.com/mandiant/gopacket/pkg/dcerpc"
 	"github.com/mandiant/gopacket/pkg/dcerpc/svcctl"
 	"github.com/mandiant/gopacket/pkg/session"
 	"github.com/mandiant/gopacket/pkg/smb"
-	"github.com/mandiant/gopacket/pkg/transport"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -131,13 +130,10 @@ func (r *SMBRunner) Start(ctx context.Context) error {
 	r.cancelCtx = cancel
 	defer r.Stop()
 
-	conn, err := transport.Dial("tcp", r.target.Addr())
+	info, err := fingerprint.SMB(r.target)
 	if err != nil {
-		return err
-	}
-	info, err := altsmb.FingerprintWithConn(conn)
-	if err != nil {
-		fmt.Println(err)
+		l := logger.New("SMB", r.target.Host, r.target.Host, r.port)
+		l.Error(fmt.Sprintln(err))
 		return err
 	}
 	l := logger.New("SMB", r.target.Host, info.NetBIOSComputerName, r.port)
@@ -167,7 +163,7 @@ func (r *SMBRunner) Stop() {
 	}
 }
 
-func formatSMBFingerprint(f *altsmb.SMBFingerprint) string {
+func formatSMBFingerprint(f *fingerprint.SMBInfo) string {
 	var builder strings.Builder
 	builder.WriteString(f.DNSComputerName)
 	if f.OSVersion != "" {

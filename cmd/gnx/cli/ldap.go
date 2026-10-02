@@ -11,8 +11,7 @@ import (
 	"strings"
 	"time"
 
-	altsmb "github.com/5amu/gonetexec/pkg/smb"
-
+	"github.com/5amu/gonetexec/internal/fingerprint"
 	"github.com/5amu/gonetexec/internal/logger"
 	"github.com/5amu/gonetexec/internal/runner"
 	"github.com/mandiant/gopacket/pkg/kerberos"
@@ -566,7 +565,7 @@ func (r *LDAPRunner) Start(ctx context.Context) error {
 	r.cancelCtx = cancel
 	defer r.Stop()
 
-	info, err := altsmb.Fingerprint(r.target.Host, 445)
+	info, err := fingerprint.SMB(session.Target{Host: r.target.Host, IP: r.target.IP, Port: 445})
 	if err != nil {
 		l := logger.New("LDAP", r.target.Host, r.target.Host, r.port)
 		l.Error(fmt.Sprintln(err))
@@ -606,7 +605,7 @@ func (r *LDAPRunner) Stop() {
 	}
 }
 
-func formatLDAPFingerprint(f *altsmb.SMBFingerprint) string {
+func formatLDAPFingerprint(f *fingerprint.SMBInfo) string {
 	var b strings.Builder
 	b.WriteString(f.DNSComputerName)
 	if f.OSVersion != "" {
