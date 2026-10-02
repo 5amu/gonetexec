@@ -33,7 +33,7 @@ func NewKrb5Cmd() *cobra.Command {
 				return
 			}
 
-			var opts *runner.RunnerOptions = &runner.RunnerOptions{}
+			opts := &runner.RunnerOptions{}
 			var strategy runner.CredentialDistributionStrategy
 			if pitchfork {
 				strategy = runner.Pitchfork
@@ -164,8 +164,8 @@ func intercept() {
 		Results: resChan,
 	}
 
-	var modules map[responder.NTLMSource]func(context.Context) error = make(map[responder.NTLMSource]func(context.Context) error)
-	var mod2port map[responder.NTLMSource]int = make(map[responder.NTLMSource]int)
+	modules := make(map[responder.NTLMSource]func(context.Context) error)
+	mod2port := make(map[responder.NTLMSource]int)
 	modules[responder.SMB] = p.GatherSMBHashes
 	mod2port[responder.SMB] = 445
 

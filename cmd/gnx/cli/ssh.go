@@ -122,7 +122,7 @@ func grabBanner(host string, port int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	buf := make([]byte, 256)
 	n, err := conn.Read(buf)
@@ -243,7 +243,7 @@ func (r *SSHRunner) authenticate(ctx context.Context, l *slog.Logger) error {
 		l.Error(fmt.Sprintln(err))
 		return err
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	credStr := credentialStringSSH(r.creds)
 	l.Log(ctx, logger.LevelSuccess.Level(), credStr)
@@ -256,7 +256,7 @@ func (r *SSHRunner) runExec(ctx context.Context, l *slog.Logger) error {
 		l.Error(fmt.Sprintln(err))
 		return err
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	var stdoutBuff, stderrBuff bytes.Buffer
 	if err := sshRun(client, r.execCmd, &stdoutBuff, &stderrBuff); err != nil {
@@ -278,7 +278,7 @@ func (r *SSHRunner) spawnShell(ctx context.Context, l *slog.Logger) error {
 		l.Error(fmt.Sprintln(err))
 		return err
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	if err := sshShell(client); err != nil {
 		l.Error(fmt.Sprintln(err))
@@ -296,7 +296,7 @@ func sshRun(c *ssh.Client, cmd string, stdout, stderr io.Writer) error {
 	if err != nil {
 		return err
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 
 	session.Stdout = stdout
 	session.Stderr = stderr
@@ -318,7 +318,7 @@ func sshShell(c *ssh.Client) error {
 	if err != nil {
 		return err
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 
 	modes := ssh.TerminalModes{
 		ssh.ECHO:          0,

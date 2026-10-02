@@ -8,7 +8,7 @@ import (
 	"net"
 	"os"
 	"path"
-	"slices"
+	"strings"
 	"time"
 
 	"github.com/5amu/gonetexec/internal/logger"
@@ -19,6 +19,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
+
+// ftpTimeoutSec bounds control- and data-connection establishment.
+const ftpTimeoutSec = 5
 
 func NewFTPCmd() *cobra.Command {
 	var username, password string
@@ -42,7 +45,7 @@ func NewFTPCmd() *cobra.Command {
 				f          func(*ftp.ServerConn, session.Target, string, string) error
 				bannerGrab bool
 			)
-			if !slices.Contains(os.Args, "-u") {
+			if !cmd.Flags().Changed("username") {
 				// If no username is provided, just try to check if an ftp server is running and grab the banner if possible.
 				f = nil
 				bannerGrab = true
@@ -120,85 +123,50 @@ type FTPRunner struct {
 }
 
 func (r *FTPRunner) Start(ctx context.Context) error {
-	childCtx, cancel := context.WithCancel(ctx)
+	_, cancel := context.WithCancel(ctx)
 	r.cancelCtx = cancel
 	defer r.Stop()
 
-	conn, err := transport.DialTimeout("TCP", fmt.Sprintf("%s:%d", r.target.Host, r.target.Port), 2)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
+	addr := r.target.Addr()
 
 	if r.bannerGrab {
 		l := logger.New("FTP", r.target.Host, r.target.Host, r.target.Port)
-		buf := make([]byte, 1024)
+		conn, err := transport.DialTimeout("tcp", addr, ftpTimeoutSec)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = conn.Close() }()
 
-		conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+		_ = conn.SetReadDeadline(time.Now().Add(ftpTimeoutSec * time.Second))
+		buf := make([]byte, 1024)
 		n, err := conn.Read(buf)
 		if err != nil {
 			l.Error(fmt.Sprintln(err))
 			return err
 		}
-		banner := string(buf[:n])
-		l.Info(fmt.Sprintf("Banner: %s", banner))
+		l.Info(fmt.Sprintf("Banner: %s", strings.TrimSpace(string(buf[:n]))))
 		return nil
 	}
 
-	srvC := make(chan *ftp.ServerConn)
-	errC := make(chan error)
-	go func(h string, p int) {
-		if c, err := ftp.Dial(
-			fmt.Sprintf("%s:%d", h, p),
-			ftp.DialWithDialFunc(func(network, address string) (net.Conn, error) {
-				return conn, nil
-			}),
-		); err != nil {
-			errC <- err
-		} else {
-			srvC <- c
-		}
-	}(r.target.Host, r.target.Port)
-
-	var srv *ftp.ServerConn
-	select {
-	case err := <-errC:
-		return err
-	case srv = <-srvC:
-	case <-time.After(2 * time.Second):
-		return fmt.Errorf("connect timed out")
-	case <-childCtx.Done():
-		return fmt.Errorf("context expired")
-	}
-
-	go func() {
-		if err := srv.Login(r.credentials.Username, r.credentials.Password); err != nil {
-			errC <- err
-		}
-	}()
-
-	select {
-	case <-childCtx.Done():
-		return fmt.Errorf("context expired")
-	case err = <-errC:
-		if err != nil {
-			return err
-		}
-	}
-	defer srv.Quit()
-
-	go func() {
-		if err := r.run(srv, r.target, r.srcFile, r.dstFile); err != nil {
-			errC <- err
-		}
-	}()
-
-	select {
-	case <-childCtx.Done():
-		return fmt.Errorf("context expired")
-	case err = <-errC:
+	// Route both the control connection and every PASV data connection through
+	// the transport dialer so the proxy configuration is honoured and each
+	// connection is freshly established.
+	srv, err := ftp.Dial(addr, ftp.DialWithDialFunc(func(network, address string) (net.Conn, error) {
+		return transport.DialTimeout(network, address, ftpTimeoutSec)
+	}))
+	if err != nil {
 		return err
 	}
+	defer func() { _ = srv.Quit() }()
+
+	if err := srv.Login(r.credentials.Username, r.credentials.Password); err != nil {
+		return err
+	}
+
+	if r.run == nil {
+		return nil
+	}
+	return r.run(srv, r.target, r.srcFile, r.dstFile)
 }
 
 func (r *FTPRunner) Stop() {
@@ -264,7 +232,7 @@ func ftpReadFile(c *ftp.ServerConn, t session.Target, src, dst string) error {
 		l.Error(fmt.Sprintln(err))
 		return err
 	}
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 
 	buf, err := io.ReadAll(r)
 	if err != nil {
@@ -280,34 +248,22 @@ func ftpReadFile(c *ftp.ServerConn, t session.Target, src, dst string) error {
 func ftpGetFile(c *ftp.ServerConn, t session.Target, src, dst string) error {
 	l := logger.New("FTP", t.Host, t.Host, t.Port)
 
-	var outfile *os.File
 	if dst == "" {
-		basePath := path.Base(src)
-
-		dstF, err := os.Create(basePath)
-		if err != nil {
-			l.Error(fmt.Sprintln(err))
-			return err
-		}
-		outfile = dstF
-		dst = dstF.Name()
-	} else {
-		dstF, err := os.Open(dst)
-		if err != nil {
-			l.Error(fmt.Sprintln(err))
-			return err
-		}
-		outfile = dstF
-		dst = dstF.Name()
+		dst = path.Base(src)
 	}
-	defer outfile.Close()
+	outfile, err := os.Create(dst)
+	if err != nil {
+		l.Error(fmt.Sprintln(err))
+		return err
+	}
+	defer func() { _ = outfile.Close() }()
 
 	r, err := c.Retr(src)
 	if err != nil {
 		l.Error(fmt.Sprintln(err))
 		return err
 	}
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 
 	buf, err := io.ReadAll(r)
 	if err != nil {
