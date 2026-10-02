@@ -5,8 +5,12 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"io"
+	"log/slog"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -26,25 +30,24 @@ import (
 
 const DefaultPort = 445
 
-const HelpMsg = `
-shares - list available shares
-use {sharename} - connect to an specific share
-cd {path} - changes the current directory to {path}
-ls {opt path} - lists all the files in the current directory or the specified path
-tree {filepath} - recursively lists all files in folder and sub folders
-rm {file} - removes the selected file
-mkdir {dirname} - creates the directory under the current path
-rmdir {dirname} - removes the directory under the current path
-put {filename} - uploads the filename into the current path
-get {filename} - downloads the filename from the current path
-mget {mask} - downloads all files from the current directory matching the provided mask
-cat {filename} - reads the filename from the current path
-mount {target,path} - creates a mount point from {path} to {target} (admin required)
-umount {path} - removes the mount point at {path} without deleting the directory (admin required)
-close - closes the current SMB Session
-exit - terminates the server process (and this session)
-logoff - logs off
-
+const HelpMsg = `Available commands:
+  shares                 list available shares
+  use <share>            connect to a share
+  cd [path]              change directory (no argument returns to the share root)
+  pwd                    print the current remote path
+  ls [path]              list files in the current (or given) directory
+  tree [path]            recursively list files under a directory
+  cat <file>             print a remote file to the console
+  get <remote> [local]   download a file (local defaults to the base name)
+  put <local> [remote]   upload a file (remote defaults to the base name)
+  mget <pattern>         download every file in the cwd matching a glob pattern
+  mkdir <dir>            create a directory
+  rmdir <dir>            remove a directory
+  rm <file>              delete a file
+  rename <old> <new>     rename or move a remote file
+  snapshots              list VSS snapshots exposed on the current share
+  help                   show this help
+  exit | logoff | close  close the SMB session
 `
 
 func NewSMBCmd() *cobra.Command {
@@ -295,76 +298,231 @@ func (r *SMBRunner) smbclient(ctx context.Context) error {
 	}
 	defer client.Close()
 
-	stop := false
-	baseLoc := fmt.Sprintf("\\\\%s\\", r.target.Host)
-	currentPath := "\\"
-	share := ""
-	cmdBufio := bufio.NewReader(os.Stdin)
-	for !stop {
-		fmt.Printf("(%s) %s >> ", r.credentials.Username, baseLoc+share+currentPath)
-		cmd, err := cmdBufio.ReadString('\n')
+	sh := &smbShell{client: client, user: r.credentials.Username, host: r.target.Host, log: l}
+	in := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Print(sh.prompt())
+		line, err := in.ReadString('\n')
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				fmt.Println()
+				break
+			}
 			l.Error(fmt.Sprintln(err))
 			return err
 		}
-
-		cmd = strings.ReplaceAll(strings.ReplaceAll(cmd, "\n", ""), "\r", "")
-		switch cmd {
-		case "exit", "logoff", "close":
-			stop = true
-		case "help":
-			fmt.Print(HelpMsg)
-			continue
-		case "shares":
-			sharenames, err := client.ListShares()
-			if err != nil {
-				l.Error(fmt.Sprintln(err))
-			} else {
-				for _, s := range sharenames {
-					l.Info(s)
-				}
-			}
-			continue
-		case "ls":
-			cmd = "ls " + currentPath
-		case "cd":
-			currentPath = "\\"
-			continue
-		}
-
-		splitted := strings.Split(cmd, " ")
-		if len(splitted) != 2 {
-			l.Info(fmt.Sprintf("Unknown command: '%s'", cmd))
-			continue
-		}
-
-		switch splitted[0] {
-		case "use":
-			if err := client.UseShare(splitted[1]); err != nil {
-				l.Error(fmt.Sprintln(err))
-				continue
-			}
-			share = splitted[1] + "\\"
-			currentPath = "\\"
-		case "ls":
-			files, err := client.Ls(splitted[1])
-			if err != nil {
-				l.Error(fmt.Sprintln(err))
-				continue
-			}
-			for _, f := range files {
-				l.Info(f.Name())
-			}
-		case "cd":
-			if err := client.Cd(splitted[1]); err != nil {
-				l.Error(fmt.Sprintln(err))
-				continue
-			}
-			currentPath = client.GetCurrentPath()
+		if stop, err := sh.dispatch(ctx, strings.TrimRight(line, "\r\n")); err != nil {
+			l.Error(fmt.Sprintln(err))
+		} else if stop {
+			break
 		}
 	}
 	l.Info("session closed")
 	return nil
+}
+
+type smbShell struct {
+	client *smb.Client
+	user   string
+	host   string
+	share  string
+	log    *slog.Logger
+}
+
+func (s *smbShell) prompt() string {
+	loc := fmt.Sprintf("\\\\%s\\", s.host)
+	if s.share != "" {
+		loc += s.share + s.client.GetCurrentPath()
+	}
+	return fmt.Sprintf("(%s) %s >> ", s.user, loc)
+}
+
+// dispatch executes a single interactive command line. It returns stop=true
+// when the session should be closed.
+func (s *smbShell) dispatch(ctx context.Context, line string) (bool, error) {
+	args := splitArgs(line)
+	if len(args) == 0 {
+		return false, nil
+	}
+	cmd, rest := args[0], args[1:]
+
+	switch cmd {
+	case "exit", "logoff", "close", "quit":
+		return true, nil
+	case "help", "?":
+		fmt.Print(HelpMsg)
+	case "shares":
+		names, err := s.client.ListShares()
+		if err != nil {
+			return false, err
+		}
+		for _, n := range names {
+			s.log.Info(n)
+		}
+	case "use":
+		if len(rest) != 1 {
+			return false, fmt.Errorf("usage: use <share>")
+		}
+		if err := s.client.UseShare(rest[0]); err != nil {
+			return false, err
+		}
+		s.share = strings.TrimSuffix(rest[0], "\\") + "\\"
+	default:
+		return s.dispatchFileOp(ctx, cmd, rest)
+	}
+	return false, nil
+}
+
+func (s *smbShell) dispatchFileOp(_ context.Context, cmd string, rest []string) (bool, error) {
+	if s.share == "" {
+		return false, fmt.Errorf("no share selected: run 'use <share>' first")
+	}
+
+	switch cmd {
+	case "pwd":
+		cur := s.client.GetCurrentPath()
+		if cur == "" {
+			cur = "\\"
+		}
+		s.log.Info(cur)
+	case "cd":
+		// Library paths are relative to the current directory and expose no
+		// reset primitive, so a bare "cd" returns to the share root by
+		// remounting the share.
+		if len(rest) == 0 {
+			return false, s.client.UseShare(strings.TrimSuffix(s.share, "\\"))
+		}
+		return false, s.client.Cd(rest[0])
+	case "ls", "dir":
+		dir := "" // relative to the current directory
+		if len(rest) >= 1 {
+			dir = rest[0]
+		}
+		files, err := s.client.Ls(dir)
+		if err != nil {
+			return false, err
+		}
+		for _, f := range files {
+			s.log.Info(formatDirEntry(f))
+		}
+	case "tree":
+		root := "" // relative to the current directory
+		if len(rest) >= 1 {
+			root = rest[0]
+		}
+		return false, s.client.Tree(root, func(p string, info os.FileInfo, err error) error {
+			if err == nil {
+				s.log.Info(p)
+			}
+			return nil
+		})
+	case "cat":
+		if len(rest) != 1 {
+			return false, fmt.Errorf("usage: cat <file>")
+		}
+		content, err := s.client.Cat(rest[0])
+		if err != nil {
+			return false, err
+		}
+		s.log.Info(content)
+	case "get":
+		if len(rest) < 1 {
+			return false, fmt.Errorf("usage: get <remote> [local]")
+		}
+		local := filepath.Base(rest[0])
+		if len(rest) >= 2 {
+			local = rest[1]
+		}
+		if err := s.client.Get(rest[0], local); err != nil {
+			return false, err
+		}
+		s.log.Info(fmt.Sprintf("downloaded %s -> %s", rest[0], local))
+	case "put":
+		if len(rest) < 1 {
+			return false, fmt.Errorf("usage: put <local> [remote]")
+		}
+		remote := filepath.Base(rest[0])
+		if len(rest) >= 2 {
+			remote = rest[1]
+		}
+		if err := s.client.Put(rest[0], remote); err != nil {
+			return false, err
+		}
+		s.log.Info(fmt.Sprintf("uploaded %s -> %s", rest[0], remote))
+	case "mget":
+		if len(rest) != 1 {
+			return false, fmt.Errorf("usage: mget <pattern>")
+		}
+		return false, s.client.Mget(rest[0])
+	case "mkdir":
+		if len(rest) != 1 {
+			return false, fmt.Errorf("usage: mkdir <dir>")
+		}
+		return false, s.client.Mkdir(rest[0])
+	case "rmdir":
+		if len(rest) != 1 {
+			return false, fmt.Errorf("usage: rmdir <dir>")
+		}
+		return false, s.client.Rmdir(rest[0])
+	case "rm", "del":
+		if len(rest) != 1 {
+			return false, fmt.Errorf("usage: rm <file>")
+		}
+		return false, s.client.Rm(rest[0])
+	case "rename", "mv":
+		if len(rest) != 2 {
+			return false, fmt.Errorf("usage: rename <old> <new>")
+		}
+		return false, s.client.Rename(rest[0], rest[1])
+	case "snapshots":
+		snaps, err := s.client.EnumerateSnapshots()
+		if err != nil {
+			return false, err
+		}
+		if len(snaps) == 0 {
+			s.log.Info("no snapshots")
+		}
+		for _, snap := range snaps {
+			s.log.Info(snap)
+		}
+	default:
+		return false, fmt.Errorf("unknown command: %q (try 'help')", cmd)
+	}
+	return false, nil
+}
+
+// formatDirEntry renders an ls entry with a type/size column.
+func formatDirEntry(f os.FileInfo) string {
+	if f.IsDir() {
+		return fmt.Sprintf("%-12s %s", "<DIR>", f.Name())
+	}
+	return fmt.Sprintf("%-12d %s", f.Size(), f.Name())
+}
+
+// splitArgs tokenizes a command line, honouring double-quoted segments so that
+// remote paths containing spaces can be addressed.
+func splitArgs(line string) []string {
+	var args []string
+	var cur strings.Builder
+	inQuote := false
+	flush := func() {
+		if cur.Len() > 0 {
+			args = append(args, cur.String())
+			cur.Reset()
+		}
+	}
+	for _, r := range line {
+		switch {
+		case r == '"':
+			inQuote = !inQuote
+		case (r == ' ' || r == '\t') && !inQuote:
+			flush()
+		default:
+			cur.WriteRune(r)
+		}
+	}
+	flush()
+	return args
 }
 
 func (r *SMBRunner) connect(ctx context.Context) (*smb.Client, error) {
@@ -373,10 +531,6 @@ func (r *SMBRunner) connect(ctx context.Context) (*smb.Client, error) {
 		target.Port = r.port
 	}
 	creds := r.credentials
-	if creds.Domain == "" {
-		creds.Domain = r.credentials.Domain
-	}
-
 	client := smb.NewClient(target, &creds)
 
 	if err := client.Connect(); err != nil {
