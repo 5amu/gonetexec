@@ -48,12 +48,12 @@ func NewWinRMCmd() *cobra.Command {
 				target.Port = port
 				for _, creds := range credentials {
 					runners = append(runners, &WinRMRunner{
-						target:    target,
-						port:      port,
-						creds:     creds,
-						useSSL:    useSSL,
-						execCmd:   execCmd,
-						shell:     shell,
+						target:  target,
+						port:    port,
+						creds:   creds,
+						useSSL:  useSSL,
+						execCmd: execCmd,
+						shell:   shell,
 					})
 				}
 			}
@@ -97,20 +97,20 @@ func (r *WinRMRunner) Start(ctx context.Context) error {
 	r.cancelCtx = cancel
 	defer r.Stop()
 
-	info, err := fingerprint.SMB(session.Target{Host: r.target.Host, IP: r.target.IP, Port: 445})
-	if err != nil {
-		l := logger.New("WINRM", r.target.Host, r.target.Host, r.port)
-		l.Error(fmt.Sprintln(err))
-		return err
+	// The SMB fingerprint only labels the host in log lines. It is
+	// best-effort: WinRM must still work when 445 is closed or filtered.
+	name := r.target.Host
+	if info, err := fingerprint.SMB(session.Target{Host: r.target.Host, IP: r.target.IP, Port: 445}); err == nil && info.NetBIOSComputerName != "" {
+		name = info.NetBIOSComputerName
 	}
 
 	if r.shell {
-		return r.openShell(childCtx, info)
+		return r.openShell(childCtx, name)
 	}
 	if r.execCmd != "" {
-		return r.exec(childCtx, info)
+		return r.exec(childCtx, name)
 	}
-	return r.authenticate(childCtx, info)
+	return r.authenticate(childCtx, name)
 }
 
 func (r *WinRMRunner) Stop() {
@@ -140,8 +140,8 @@ func (r *WinRMRunner) winrmClient(creds session.Credentials) (*winrm.Client, err
 // Actions
 // ---------------------------------------------------------------------------
 
-func (r *WinRMRunner) authenticate(ctx context.Context, info *fingerprint.SMBInfo) error {
-	l := logger.New("WINRM", r.target.Host, info.NetBIOSComputerName, r.port)
+func (r *WinRMRunner) authenticate(ctx context.Context, name string) error {
+	l := logger.New("WINRM", r.target.Host, name, r.port)
 
 	client, err := r.winrmClient(r.creds)
 	if err != nil {
@@ -149,54 +149,44 @@ func (r *WinRMRunner) authenticate(ctx context.Context, info *fingerprint.SMBInf
 		return err
 	}
 
-	// Run a no-op command to verify auth works.
-	_, err = client.RunWithContext(ctx, "hostname", os.Stdout, os.Stderr)
-	if err != nil {
-		l.Log(ctx, logger.LevelSuccess.Level(), fmt.Sprintf("[-] %s", r.creds.Username))
+	// Verify auth with a no-op command, discarding its output.
+	var out, errBuf bytes.Buffer
+	if _, err := client.RunWithContext(ctx, "hostname", &out, &errBuf); err != nil {
+		l.Error(fmt.Sprintf("%s %s", credentialStringWinRM(r.creds), err))
 		return err
 	}
 
-	l.Log(ctx, logger.LevelSuccess.Level(), fmt.Sprintf("[*] %s", r.creds.Username))
+	l.Log(ctx, logger.LevelSuccess.Level(), credentialStringWinRM(r.creds))
 	return nil
 }
 
-func (r *WinRMRunner) exec(ctx context.Context, info *fingerprint.SMBInfo) error {
-	l := logger.New("WINRM", r.target.Host, info.NetBIOSComputerName, r.port)
+func (r *WinRMRunner) exec(ctx context.Context, name string) error {
+	l := logger.New("WINRM", r.target.Host, name, r.port)
 
-	var client *winrm.Client
-	var found bool
-	for _, cred := range []session.Credentials{r.creds} {
-		c, err := r.winrmClient(cred)
-		if err != nil {
-			l.Log(ctx, logger.LevelSuccess.Level(), fmt.Sprintf("[-] %s", cred.Username))
-			continue
-		}
-		client = c
-		found = true
-		l.Log(ctx, logger.LevelSuccess.Level(), fmt.Sprintf("[*] %s", cred.Username))
-		break
-	}
-	if !found {
-		return fmt.Errorf("no valid credentials")
+	client, err := r.winrmClient(r.creds)
+	if err != nil {
+		l.Error(fmt.Sprintln(err))
+		return err
 	}
 
 	var stdoutBuff, stderrBuff bytes.Buffer
-	_, err := client.RunWithContext(ctx, r.execCmd, &stdoutBuff, &stderrBuff)
-	if err != nil {
+	if _, err := client.RunWithContext(ctx, r.execCmd, &stdoutBuff, &stderrBuff); err != nil {
 		l.Error(fmt.Sprintln(err))
 		return err
 	}
 
-	out := stdoutBuff.String() + stderrBuff.String()
-	lines := strings.Split(out, "\n")
-	for _, s := range lines[:len(lines)-1] {
-		l.Info(s)
+	l.Log(ctx, logger.LevelSuccess.Level(), credentialStringWinRM(r.creds))
+	out := strings.TrimRight(stdoutBuff.String()+stderrBuff.String(), "\r\n")
+	if out != "" {
+		for _, s := range strings.Split(out, "\n") {
+			l.Info(strings.TrimRight(s, "\r"))
+		}
 	}
 	return nil
 }
 
-func (r *WinRMRunner) openShell(ctx context.Context, info *fingerprint.SMBInfo) error {
-	l := logger.New("WINRM", r.target.Host, info.NetBIOSComputerName, r.port)
+func (r *WinRMRunner) openShell(ctx context.Context, name string) error {
+	l := logger.New("WINRM", r.target.Host, name, r.port)
 
 	client, err := r.winrmClient(r.creds)
 	if err != nil {
@@ -204,10 +194,16 @@ func (r *WinRMRunner) openShell(ctx context.Context, info *fingerprint.SMBInfo) 
 		return err
 	}
 
-	_, err = client.RunWithContextWithInput(ctx, "powershell.exe", os.Stdout, os.Stderr, os.Stdin)
-	if err != nil {
+	if _, err := client.RunWithContextWithInput(ctx, "powershell.exe", os.Stdout, os.Stderr, os.Stdin); err != nil {
 		l.Error(fmt.Sprintln(err))
 		return err
 	}
 	return nil
+}
+
+func credentialStringWinRM(c session.Credentials) string {
+	if c.Password == "" {
+		return c.Username
+	}
+	return fmt.Sprintf("%s:%s", c.Username, c.Password)
 }
