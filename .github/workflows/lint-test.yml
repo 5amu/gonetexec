@@ -20,7 +20,10 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: 'stable'
+          # Pin to the go.mod toolchain. golangci-lint v2.5.0 ships a go1.25
+          # typechecker and panics on a newer stdlib (e.g. the 'stable' runner
+          # Go), so the linter's Go must not exceed its build version.
+          go-version: '1.24.13'
 
       - name: Checkout code
         uses: actions/checkout@v3
