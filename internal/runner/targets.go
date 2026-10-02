@@ -13,7 +13,7 @@ func readLines(path string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var lines []string
 	scanner := bufio.NewScanner(file)
@@ -51,7 +51,13 @@ func extract(list []string, recurse bool) []session.Target {
 			for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
 				ips = append(ips, ip.String())
 			}
-			for _, ip := range ips[1 : len(ips)-1] {
+			// For prefixes with a distinct network and broadcast address
+			// (/30 and larger host counts) drop both; /31 and /32 have no
+			// such addresses, so keep every entry.
+			if len(ips) > 2 {
+				ips = ips[1 : len(ips)-1]
+			}
+			for _, ip := range ips {
 				res = append(res, session.Target{Host: ip, IP: ip})
 			}
 		} else if isFile(l) && recurse {

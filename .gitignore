@@ -5,3 +5,4 @@ dist
 .vscode
 .planning
 /gnx
+/cmd/gnx/gnx

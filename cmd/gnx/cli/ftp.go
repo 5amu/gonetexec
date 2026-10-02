@@ -8,7 +8,6 @@ import (
 	"net"
 	"os"
 	"path"
-	"slices"
 	"strings"
 	"time"
 
@@ -46,7 +45,7 @@ func NewFTPCmd() *cobra.Command {
 				f          func(*ftp.ServerConn, session.Target, string, string) error
 				bannerGrab bool
 			)
-			if !slices.Contains(os.Args, "-u") {
+			if !cmd.Flags().Changed("username") {
 				// If no username is provided, just try to check if an ftp server is running and grab the banner if possible.
 				f = nil
 				bannerGrab = true

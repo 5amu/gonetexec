@@ -186,7 +186,7 @@ func NewLDAPCmd() *cobra.Command {
 				)
 			}
 
-			doNothing := !slices.Contains(os.Args, "-u") && !nullSession
+			doNothing := !cmd.Flags().Changed("username") && !nullSession
 
 			// Determine action and build filters / attributes.
 			action, filter, attrs := parseLDAPAction(
@@ -785,8 +785,8 @@ func (r *LDAPRunner) create(ctx context.Context, domain string) error {
 		},
 	}
 
-	password := generatePassword(12)
-	attrs[attrUnicodePassword] = []string{stringToUTF16String(password)}
+	password := runner.GeneratePassword(12)
+	attrs[attrUnicodePassword] = []string{runner.StringToUTF16(password)}
 
 	if err := client.Add(dn, attrs); err != nil {
 		l.Error(fmt.Sprintln(err))
@@ -870,7 +870,7 @@ func (r *LDAPRunner) asreproast(ctx context.Context, domain string) error {
 	if len(hashes) == 0 {
 		return nil
 	}
-	if err := writeLines(hashes, r.hashFile); err != nil {
+	if err := runner.WriteLines(hashes, r.hashFile); err != nil {
 		l.Error(fmt.Sprintln(err))
 		return err
 	}
@@ -923,7 +923,7 @@ func (r *LDAPRunner) kerberoast(ctx context.Context, domain string) error {
 	if len(hashes) == 0 {
 		return nil
 	}
-	if err := writeLines(hashes, r.krbFile); err != nil {
+	if err := runner.WriteLines(hashes, r.krbFile); err != nil {
 		l.Error(fmt.Sprintln(err))
 		return err
 	}

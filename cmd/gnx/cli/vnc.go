@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"os"
-	"slices"
 	"sync"
 	"time"
 
@@ -43,7 +41,7 @@ func NewVNCCmd() *cobra.Command {
 			// Gather VNC banners up-front.
 			banners := gatherVNCBanners(targets, port)
 
-			doNothing := !slices.Contains(os.Args, "-p")
+			doNothing := !cmd.Flags().Changed("password")
 
 			var runners []runner.Runner
 			for _, target := range targets {
@@ -106,7 +104,7 @@ func verifyVNC(host string, port int) bool {
 	if err != nil {
 		return false
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	_ = conn.SetDeadline(time.Now().Add(2 * time.Second))
 

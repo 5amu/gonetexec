@@ -11,7 +11,6 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"time"
 	"unicode/utf16"
@@ -76,7 +75,7 @@ func NewSMBCmd() *cobra.Command {
 				return
 			}
 
-			doNothing := !slices.Contains(os.Args, "-u")
+			doNothing := !cmd.Flags().Changed("username")
 
 			var runners []runner.Runner
 			for _, target := range targets {
@@ -576,7 +575,7 @@ func smbExec(ctx context.Context, client *smb.Client, cmd string, opts smbExecOp
 	if err != nil {
 		return "", err
 	}
-	defer pipe.Close()
+	defer func() { _ = pipe.Close() }()
 
 	rpcClient := dcerpc.NewClient(pipe)
 	if err := rpcClient.Bind(svcctl.UUID, svcctl.MajorVersion, svcctl.MinorVersion); err != nil {
@@ -739,7 +738,7 @@ func isShareWritable(c *smb.Client, name string) bool {
 	localPath := localFile.Name()
 	_, _ = localFile.WriteString("test")
 	_ = localFile.Close()
-	defer os.Remove(localPath)
+	defer func() { _ = os.Remove(localPath) }()
 
 	if err := c.Put(localPath, name); err != nil {
 		return false
