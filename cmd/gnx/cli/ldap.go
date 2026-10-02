@@ -162,6 +162,7 @@ func NewLDAPCmd() *cobra.Command {
 		user             string
 		getSID           bool
 		gmsa             bool
+		findDelegation   bool
 		readNot          bool
 	)
 
@@ -200,7 +201,7 @@ func NewLDAPCmd() *cobra.Command {
 				notDelegated, useDES, dontRequirePre, pwdExpired,
 				trustedToAuth, partialSecrets,
 				adminCount, computers, groups, users, activeUsers,
-				user, getSID, gmsa, readNot,
+				user, getSID, gmsa, findDelegation, readNot,
 			)
 
 			var runners []runner.Runner
@@ -208,42 +209,44 @@ func NewLDAPCmd() *cobra.Command {
 				target.Port = port
 				if nullSession || len(credentials) == 0 {
 					runners = append(runners, &LDAPRunner{
-						target:      target,
-						port:        port,
-						useSSL:      useSSL,
-						domain:      domain,
-						action:      action,
-						filter:      filter,
-						attributes:  attrs,
-						createName:  addComputer,
-						createUAC:   int(uacWorkstationTrustAccount),
-						deleteName:  delComputer,
-						deleteType:  delComputerType,
-						hashFile:    asrepFile,
-						krbFile:     krbFile,
-						doNothing:   doNothing,
-						nullSession: nullSession,
+						target:       target,
+						port:         port,
+						useSSL:       useSSL,
+						domain:       domain,
+						action:       action,
+						filter:       filter,
+						attributes:   attrs,
+						createName:   addComputer,
+						createUAC:    int(uacWorkstationTrustAccount),
+						deleteName:   delComputer,
+						deleteType:   delComputerType,
+						hashFile:     asrepFile,
+						krbFile:      krbFile,
+						specificUser: user,
+						doNothing:    doNothing,
+						nullSession:  nullSession,
 					})
 				} else {
 					for _, creds := range credentials {
 						creds.Domain = domain
 						runners = append(runners, &LDAPRunner{
-							target:      target,
-							port:        port,
-							credentials: creds,
-							useSSL:      useSSL,
-							domain:      domain,
-							action:      action,
-							filter:      filter,
-							attributes:  attrs,
-							createName:  addComputer,
-							createUAC:   int(uacWorkstationTrustAccount),
-							deleteName:  delComputer,
-							deleteType:  delComputerType,
-							hashFile:    asrepFile,
-							krbFile:     krbFile,
-							doNothing:   doNothing,
-							nullSession: nullSession,
+							target:       target,
+							port:         port,
+							credentials:  creds,
+							useSSL:       useSSL,
+							domain:       domain,
+							action:       action,
+							filter:       filter,
+							attributes:   attrs,
+							createName:   addComputer,
+							createUAC:    int(uacWorkstationTrustAccount),
+							deleteName:   delComputer,
+							deleteType:   delComputerType,
+							hashFile:     asrepFile,
+							krbFile:      krbFile,
+							specificUser: user,
+							doNothing:    doNothing,
+							nullSession:  nullSession,
 						})
 					}
 				}
@@ -283,6 +286,7 @@ func NewLDAPCmd() *cobra.Command {
 	queryFlags.StringVar(&user, "user", "", "Get data about a single user")
 	queryFlags.BoolVar(&getSID, "sid", false, "Get domain SID")
 	queryFlags.BoolVar(&gmsa, "gmsa", false, "Get GMSA passwords")
+	queryFlags.BoolVar(&findDelegation, "find-delegation", false, "Enumerate Kerberos delegation relationships (unconstrained, constrained, RBCD)")
 
 	filterFlags := pflag.NewFlagSet("Filter Flags", pflag.ContinueOnError)
 	filterFlags.BoolVar(&script, "script", false, "Filter for objects with flag SCRIPT")
@@ -328,6 +332,7 @@ const (
 	ldapDelete
 	ldapAsrepRoast
 	ldapKerberoast
+	ldapDelegation
 )
 
 type deletionType int
@@ -354,8 +359,11 @@ func parseLDAPAction(
 	trustedToAuth, partialSecrets bool,
 	adminCount, computers, groups, users, activeUsers bool,
 	user string,
-	getSID, gmsa, readNot bool,
+	getSID, gmsa, findDelegation, readNot bool,
 ) (ldapAction, string, []string) {
+	if findDelegation {
+		return ldapDelegation, "", nil
+	}
 	if asrepFile != "" {
 		return ldapAsrepRoast,
 			joinFilters(filterIsUser, uacFilter(uacDontRequirePreauth)),
@@ -541,23 +549,24 @@ func parseAttributes(s string) []string {
 // ---------------------------------------------------------------------------
 
 type LDAPRunner struct {
-	target      session.Target
-	port        int
-	credentials session.Credentials
-	useSSL      bool
-	domain      string
-	action      ldapAction
-	filter      string
-	attributes  []string
-	createName  string
-	createUAC   int
-	deleteName  string
-	deleteType  deletionType
-	hashFile    string
-	krbFile     string
-	doNothing   bool
-	nullSession bool
-	cancelCtx   context.CancelFunc
+	target       session.Target
+	port         int
+	credentials  session.Credentials
+	useSSL       bool
+	domain       string
+	action       ldapAction
+	filter       string
+	attributes   []string
+	createName   string
+	createUAC    int
+	deleteName   string
+	deleteType   deletionType
+	hashFile     string
+	krbFile      string
+	specificUser string
+	doNothing    bool
+	nullSession  bool
+	cancelCtx    context.CancelFunc
 }
 
 func (r *LDAPRunner) Start(ctx context.Context) error {
@@ -594,6 +603,8 @@ func (r *LDAPRunner) Start(ctx context.Context) error {
 		return r.asreproast(childCtx, domain)
 	case ldapKerberoast:
 		return r.kerberoast(childCtx, domain)
+	case ldapDelegation:
+		return r.delegation(childCtx, domain)
 	default:
 		return r.authenticate(childCtx, domain)
 	}
@@ -711,7 +722,7 @@ func (r *LDAPRunner) read(ctx context.Context, domain string) error {
 
 	l.Info("LDAP Query Filter: " + r.filter)
 
-	baseDN := toDN(domain)
+	baseDN := r.baseDN(client, domain)
 	res, err := client.SearchWithPaging(baseDN, r.filter, r.attributes, 1000)
 	if err != nil {
 		l.Error(fmt.Sprintln(err))
@@ -834,7 +845,7 @@ func (r *LDAPRunner) asreproast(ctx context.Context, domain string) error {
 		return err
 	}
 
-	baseDN := toDN(domain)
+	baseDN := r.baseDN(client, domain)
 	res, err := client.SearchWithPaging(baseDN, r.filter, r.attributes, 1000)
 	if err != nil {
 		l.Error(fmt.Sprintln(err))
@@ -882,7 +893,7 @@ func (r *LDAPRunner) kerberoast(ctx context.Context, domain string) error {
 		return err
 	}
 
-	baseDN := toDN(domain)
+	baseDN := r.baseDN(client, domain)
 	res, err := client.SearchWithPaging(baseDN, r.filter, r.attributes, 1000)
 	if err != nil {
 		l.Error(fmt.Sprintln(err))
@@ -921,8 +932,52 @@ func (r *LDAPRunner) kerberoast(ctx context.Context, domain string) error {
 }
 
 // ---------------------------------------------------------------------------
+// Delegation
+// ---------------------------------------------------------------------------
+
+func (r *LDAPRunner) delegation(ctx context.Context, domain string) error {
+	l := logger.New("LDAP", r.target.Host, r.target.Host, r.port)
+
+	client, err := r.connect()
+	if err != nil {
+		l.Error(fmt.Sprintln(err))
+		return err
+	}
+	defer client.Close()
+
+	if err := r.login(client, domain); err != nil {
+		l.Error(fmt.Sprintln(err))
+		return err
+	}
+
+	entries, err := client.FindDelegation(r.baseDN(client, domain), false, r.specificUser)
+	if err != nil {
+		l.Error(fmt.Sprintln(err))
+		return err
+	}
+	if len(entries) == 0 {
+		l.Info("No delegation relationships found")
+		return nil
+	}
+	for _, e := range entries {
+		l.Log(ctx, logger.LevelSuccess.Level(), fmt.Sprintf("%s (%s) [%s] -> %s (SPN exists: %s)",
+			e.AccountName, e.AccountType, e.DelegationType, e.DelegationTo, e.SPNExists))
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
 // Utilities
 // ---------------------------------------------------------------------------
+
+// baseDN resolves the LDAP search base, preferring the server's advertised
+// defaultNamingContext (RootDSE) and falling back to a domain-derived DN.
+func (r *LDAPRunner) baseDN(client *altldap.Client, domain string) string {
+	if dn, err := client.GetDefaultNamingContext(); err == nil && dn != "" {
+		return dn
+	}
+	return toDN(domain)
+}
 
 func toDN(s string) string {
 	return fmt.Sprintf("dc=%s", strings.Join(strings.Split(s, "."), ",dc="))
